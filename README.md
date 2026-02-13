@@ -1,7 +1,7 @@
 # Catan
 
 ## Project Information
-A Java-based simulator for **Settlers of Catan** board game that models game mechanics and demonstrates object-oriented design principles.
+A Java-based simulator for **Settlers of Catan** board game that models game mechanics and demonstrates object-oriented, GRASP, and SOLID design principles.
 
 ## Authors
 - Shan Truong
