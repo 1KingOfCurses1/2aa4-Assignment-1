@@ -1,5 +1,7 @@
 # Catan
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=erika-goh_2aa4-Assignment-1&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=erika-goh_2aa4-Assignment-1)
+
 ## Project Information
 A Java-based simulator for **Settlers of Catan** board game that models game mechanics and demonstrates object-oriented, GRASP, and SOLID design principles.
 
@@ -12,4 +14,4 @@ A Java-based simulator for **Settlers of Catan** board game that models game mec
 ## Academic Integrity
 
 This repository is shared for reference only.  
-Copying or submitting this work as your own may violate McMaster University’s academic integrity policy.
+Copying or submitting this work as your own may violate McMaster University’s academic integrity policy. 
