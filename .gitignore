@@ -1,20 +1,26 @@
+# --- Maven ---
+target/
+
 # --- Java ---
 *.class
 *.jar
 *.war
 *.ear
 
-# --- Eclipse ---
+# --- IDEs ---
+.settings/
+.project
+.classpath
 .metadata/
+.idea/
+*.iml
+.vscode/
+
+# --- OS & Temp ---
+.DS_Store
+Thumbs.db
 bin/
 tmp/
 *.tmp
 *.bak
 *.swp
-.settings/
-.project
-.classpath
-
-# --- OS ---
-.DS_Store
-Thumbs.db
