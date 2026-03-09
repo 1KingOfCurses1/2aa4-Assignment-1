@@ -24,3 +24,7 @@ tmp/
 *.tmp
 *.bak
 *.swp
+
+# --- PDFs --
+*.pdf
+
