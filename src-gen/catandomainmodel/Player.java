@@ -4,9 +4,59 @@
 
 package catandomainmodel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /************************************************************/
 /**
- * 
+ * A player in the game, identified by an integer ID.
  */
 public class Player {
+
+    private int id;
+    private int victoryPoints;
+    private List<Structure> structures;
+    private ResourceHand resourceHand;
+
+    public Player(int id) {
+        this.id = id;
+        this.victoryPoints = 0;
+        this.structures = new ArrayList<>();
+        this.resourceHand = new ResourceHand();
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getVictoryPoints() {
+        return victoryPoints;
+    }
+
+    public ResourceHand getResourceHand() {
+        return resourceHand;
+    }
+
+    public List<Structure> getStructures() {
+        return structures;
+    }
+
+    /**
+     * Adds a structure and updates victory points accordingly.
+     */
+    public void addStructure(Structure s) {
+        structures.add(s);
+        victoryPoints += s.getVictoryPoints();
+        // Also place the structure on its node
+        if (s.getLocation() != null) {
+            s.getLocation().setStructure(s);
+        }
+    }
+
+    /**
+     * Returns true if the player has more than 7 resource cards (robber rule).
+     */
+    public boolean needsToSpendCards() {
+        return resourceHand.getTotalCards() > 7;
+    }
 }

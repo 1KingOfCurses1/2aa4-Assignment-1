@@ -4,54 +4,43 @@
 
 package catandomainmodel;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /************************************************************/
 /**
- * 
+ * The shared bank of resources available in the game.
+ * Initialized with 19 of each resource type.
  */
 public class ResourceBank {
-	/**
-	 * 
-	 */
-	private EMap availableResources;
 
-	/**
-	 * 
-	 */
-	public void ResourceBank() {
-	}
+    private Map<ResourceType, Integer> availableResources;
 
-	/**
-	 * 
-	 * @param type 
-	 * @param amount 
-	 * @return 
-	 */
-	public boolean hasResource(ResourceType type, int amount) {
-	}
+    public ResourceBank() {
+        availableResources = new EnumMap<>(ResourceType.class);
+        for (ResourceType type : ResourceType.values()) {
+            availableResources.put(type, 19);
+        }
+    }
 
-	/**
-	 * 
-	 * @param type 
-	 * @param amount 
-	 * @return 
-	 */
-	public boolean takeResource(ResourceType type, int amount) {
-	}
+    public boolean hasResource(ResourceType type, int amount) {
+        return availableResources.getOrDefault(type, 0) >= amount;
+    }
 
-	/**
-	 * 
-	 * @param type 
-	 * @return 
-	 */
-	public int getRemainingCount(ResourceType type) {
-	}
+    public boolean takeResource(ResourceType type, int amount) {
+        if (!hasResource(type, amount)) {
+            return false;
+        }
+        availableResources.put(type, availableResources.get(type) - amount);
+        return true;
+    }
 
-	/**
-	 * 
-	 * @param type 
-	 * @param amount 
-	 * @return 
-	 */
-	public void returnResource(ResourceType type, int amount) {
-	}
+    public int getRemainingCount(ResourceType type) {
+        return availableResources.getOrDefault(type, 0);
+    }
+
+    public void returnResource(ResourceType type, int amount) {
+        availableResources.put(type,
+                availableResources.getOrDefault(type, 0) + amount);
+    }
 }

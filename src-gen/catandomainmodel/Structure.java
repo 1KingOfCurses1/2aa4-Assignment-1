@@ -6,44 +6,25 @@ package catandomainmodel;
 
 /************************************************************/
 /**
- * 
+ * Abstract base for structures placed on nodes (Settlement, City).
  */
 public abstract class Structure {
-	/**
-	 * 
-	 */
-	private Player owner;
-	/**
-	 * 
-	 */
-	private Node location;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public Player getOwner() {
-	}
+    private Player owner;
+    private Node location;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getVictoryPoints() {
-	}
+    protected Structure(Player owner, Node location) {
+        this.owner = owner;
+        this.location = location;
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public Node getLocation() {
-	}
+    public Player getOwner() {
+        return owner;
+    }
 
-	/**
-	 * 
-	 * @param owner 
-	 * @param location 
-	 */
-	public void structure(Player owner, Node location) {
-	}
+    public abstract int getVictoryPoints();
+
+    public Node getLocation() {
+        return location;
+    }
 }

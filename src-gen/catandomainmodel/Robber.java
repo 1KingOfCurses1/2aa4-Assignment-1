@@ -6,25 +6,21 @@ package catandomainmodel;
 
 /************************************************************/
 /**
- * 
+ * The robber piece. Moves to a tile when a 7 is rolled.
  */
 public class Robber {
-	/**
-	 * 
-	 */
-	public Tile location;
 
-	/**
-	 * 
-	 */
-	public void move(tile: Tile): void() {
-	}
+    private Tile location;
 
-	/**
-	 * 
-	 */
-	public void getLocation():
+    public Robber() {
+        this.location = null;
+    }
 
-	Tile() {
-	}
+    public void move(Tile tile) {
+        this.location = tile;
+    }
+
+    public Tile getLocation() {
+        return location;
+    }
 }

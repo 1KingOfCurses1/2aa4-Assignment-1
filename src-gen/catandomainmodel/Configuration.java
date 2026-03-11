@@ -4,28 +4,42 @@
 
 package catandomainmodel;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 /************************************************************/
 /**
- * 
+ * Holds game configuration parameters.
  */
 public class Configuration {
-	/**
-	 * 
-	 */
-	private int maxRounds;
 
-	/**
-	 * 
-	 * @return 
-	 * @param filePath 
-	 */
-	public void loadFromFile(String filePath) {
-	}
+    private int maxRounds;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getMaxRounds() {
-	}
+    public Configuration() {
+        this.maxRounds = 500;
+    }
+
+    /**
+     * Loads configuration from a text file.
+     * Expects lines like "turns: 100".
+     */
+    public void loadFromFile(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.startsWith("turns:")) {
+                    String value = line.substring("turns:".length()).trim();
+                    this.maxRounds = Integer.parseInt(value);
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            // Keep default if file can't be read
+        }
+    }
+
+    public int getMaxRounds() {
+        return maxRounds;
+    }
 }

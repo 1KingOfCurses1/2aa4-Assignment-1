@@ -4,86 +4,89 @@
 
 package catandomainmodel;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /************************************************************/
 /**
- * 
+ * Represents a hand of resource cards held by a player.
  */
 public class ResourceHand {
-	/**
-	 * 
-	 */
-	private EMap resources;
 
-	/**
-	 * 
-	 */
-	public void ResourceHand() {
-	}
+    private Map<ResourceType, Integer> resources;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getBrick() {
-	}
+    public ResourceHand() {
+        resources = new EnumMap<>(ResourceType.class);
+        for (ResourceType type : ResourceType.values()) {
+            resources.put(type, 0);
+        }
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getLumber() {
-	}
+    public int getBrick() {
+        return resources.getOrDefault(ResourceType.BRICK, 0);
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getWool() {
-	}
+    public int getLumber() {
+        return resources.getOrDefault(ResourceType.LUMBER, 0);
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getGrain() {
-	}
+    public int getWool() {
+        return resources.getOrDefault(ResourceType.WOOL, 0);
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int getOre() {
-	}
+    public int getGrain() {
+        return resources.getOrDefault(ResourceType.GRAIN, 0);
+    }
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int totalCards() {
-	}
+    public int getOre() {
+        return resources.getOrDefault(ResourceType.ORE, 0);
+    }
 
-	/**
-	 * 
-	 * @param type 
-	 * @param amount 
-	 * @return 
-	 */
-	public void add(ResourceType type, int amount) {
-	}
+    public int getAmount(ResourceType type) {
+        return resources.getOrDefault(type, 0);
+    }
 
-	/**
-	 * 
-	 * @param cost 
-	 * @return 
-	 */
-	public boolean canAfford(EMap cost) {
-	}
+    public int getTotalCards() {
+        int total = 0;
+        for (int count : resources.values()) {
+            total += count;
+        }
+        return total;
+    }
 
-	/**
-	 * 
-	 * @param cost 
-	 * @return 
-	 */
-	public boolean spend(EMap cost) {
-	}
+    public void add(ResourceType type, int amount) {
+        resources.put(type, resources.getOrDefault(type, 0) + amount);
+    }
+
+    public void remove(ResourceType type, int amount) {
+        int current = resources.getOrDefault(type, 0);
+        resources.put(type, Math.max(0, current - amount));
+    }
+
+    public boolean canAfford(Map<ResourceType, Integer> cost) {
+        for (Map.Entry<ResourceType, Integer> entry : cost.entrySet()) {
+            if (resources.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean spend(Map<ResourceType, Integer> cost) {
+        if (!canAfford(cost)) {
+            return false;
+        }
+        for (Map.Entry<ResourceType, Integer> entry : cost.entrySet()) {
+            resources.put(entry.getKey(),
+                    resources.get(entry.getKey()) - entry.getValue());
+        }
+        return true;
+    }
+
+    /**
+     * Returns the internal resource map (for serialization / export).
+     */
+    public Map<ResourceType, Integer> getResources() {
+        return new EnumMap<>(resources);
+    }
 }

@@ -4,44 +4,75 @@
 
 package catandomainmodel;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 /************************************************************/
 /**
- * 
+ * A machine-controlled agent that makes random decisions.
+ * Implements IAgent per the UML.
  */
 public class Agent implements IAgent {
-	/**
-	 * 
-	 */
-	private Player player;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public Action makeDecision() {
-	}
+    private Player player;
+    private Random random;
 
-	/**
-	 * 
-	 * @return 
-	 */
-	public int rollDice() {
-	}
+    public Agent(Player player) {
+        this.player = player;
+        this.random = new Random();
+    }
 
-	/**
-	 * 
-	 * @param availableActions 
-	 * @return 
-	 */
-	public Action chooseRandomAction(List availableActions) {
-	}
+    public Player getPlayer() {
+        return player;
+    }
 
-	/**
-	 * 
-	 * @param board 
-	 * @param resourceBank 
-	 * @return 
-	 */
-	public void takeTurn(Board board, ResourceBank resourceBank) {
-	}
+    /**
+     * Rolls two six-sided dice and returns the sum (2–12).
+     */
+    public int rollDice() {
+        return (random.nextInt(6) + 1) + (random.nextInt(6) + 1);
+    }
+
+    /**
+     * Chooses a random action from the given list, or null if the list is
+     * null or empty.
+     */
+    public Action chooseRandomAction(List<Action> availableActions) {
+        if (availableActions == null || availableActions.isEmpty()) {
+            return null;
+        }
+        return availableActions.get(random.nextInt(availableActions.size()));
+    }
+
+    /**
+     * Turn automaton: roll → resolve → choose action.
+     * Builds a list of available actions based on state, then picks randomly.
+     */
+    @Override
+    public Action takeTurn(int roundNumber, Board board, ResourceBank resourceBank) {
+        int roll = rollDice();
+
+        // Build available actions
+        List<Action> actions = new ArrayList<>();
+        actions.add(new Action(roundNumber, player.getId(), "ROLL", ActionType.ROLL));
+        actions.add(new Action(roundNumber, player.getId(), "BUILD_SETTLEMENT", ActionType.BUILD_SETTLEMENT));
+        actions.add(new Action(roundNumber, player.getId(), "BUILD_ROAD", ActionType.BUILD_ROAD));
+        actions.add(new Action(roundNumber, player.getId(), "PASS", ActionType.PASS));
+
+        // BUILD_CITY is only available if the player has at least one structure
+        if (!player.getStructures().isEmpty()) {
+            actions.add(new Action(roundNumber, player.getId(), "BUILD_CITY", ActionType.BUILD_CITY));
+        }
+
+        return chooseRandomAction(actions);
+    }
+
+    /**
+     * Convenience: make a decision (delegates to random action selection).
+     */
+    public Action makeDecision() {
+        // Default: pass
+        return new Action(0, player.getId(), "PASS", ActionType.PASS);
+    }
 }

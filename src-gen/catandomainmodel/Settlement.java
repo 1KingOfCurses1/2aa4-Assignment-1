@@ -6,13 +6,16 @@ package catandomainmodel;
 
 /************************************************************/
 /**
- * 
+ * A settlement placed on a node, worth 1 victory point.
  */
 public class Settlement extends Structure {
-	/**
-	 * 
-	 * @param owner 
-	 */
-	public void Settlement(Player owner) {
-	}
+
+    public Settlement(Player owner, Node location) {
+        super(owner, location);
+    }
+
+    @Override
+    public int getVictoryPoints() {
+        return 1;
+    }
 }

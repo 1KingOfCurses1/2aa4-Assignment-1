@@ -6,27 +6,31 @@ package catandomainmodel;
 
 /************************************************************/
 /**
- * 
+ * Represents a trade offer between players.
  */
 public class TradeOffer {
-	/**
-	 * 
-	 */
-	private ResourceHand offeredResources;
-	/**
-				 * 
-				 */
-				private ResourceHand requestedResources;
 
-	/**
-	 * 
-	 */
-	public void accept(): void() {
-	}
+    private ResourceHand offeredResources;
+    private ResourceHand requestedResources;
 
-	/**
-	 * 
-	 */
-	public void reject(): void() {
-	}
+    public TradeOffer(ResourceHand offered, ResourceHand requested) {
+        this.offeredResources = offered;
+        this.requestedResources = requested;
+    }
+
+    public ResourceHand getOfferedResources() {
+        return offeredResources;
+    }
+
+    public ResourceHand getRequestedResources() {
+        return requestedResources;
+    }
+
+    public void accept() {
+        // Accept logic: transfer resources between players
+    }
+
+    public void reject() {
+        // Reject logic: no resource transfer
+    }
 }
