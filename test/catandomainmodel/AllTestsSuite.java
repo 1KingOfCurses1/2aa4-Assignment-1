@@ -5,14 +5,14 @@ import org.junit.platform.suite.api.Suite;
 
 @Suite
 @SelectClasses({
-                ResourceHandTest.class,
-                ResourceBankTest.class,
-                AgentTest.class,
-                PlayerAndStructureTest.class,
-                EdgeAndActionTest.class,
-                BoardTest.class,
-                ConfigurationTest.class,
-                CommandParserTest.class
+        ResourceHandTest.class,
+        ResourceBankTest.class,
+        AgentTest.class,
+        PlayerAndStructureTest.class,
+        EdgeAndActionTest.class,
+        BoardTest.class,
+        ConfigurationTest.class,
+        CommandParserTest.class
 })
 public class AllTestsSuite {
 }

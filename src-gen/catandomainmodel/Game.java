@@ -4,6 +4,7 @@
 
 package catandomainmodel;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -36,7 +37,7 @@ public class Game {
         this.configuration = new Configuration();
         this.resourceBank = new ResourceBank();
         this.gameStateExporter = new GameStateExporter();
-        this.random = new Random();
+        this.random = new SecureRandom();
     }
 
     public int getRound() {

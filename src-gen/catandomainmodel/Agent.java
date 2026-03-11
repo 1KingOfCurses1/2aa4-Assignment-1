@@ -4,6 +4,7 @@
 
 package catandomainmodel;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -20,7 +21,7 @@ public class Agent implements IAgent {
 
     public Agent(Player player) {
         this.player = player;
-        this.random = new Random();
+        this.random = new SecureRandom();
     }
 
     public Player getPlayer() {
