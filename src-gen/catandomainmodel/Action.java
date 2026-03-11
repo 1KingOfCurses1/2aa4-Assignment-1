@@ -9,28 +9,34 @@ package catandomainmodel;
  * 
  */
 public class Action {
+
+	public static final String BUILD_SETTLEMENT = "BUILD_SETTLEMENT";
+	public static final String BUILD_CITY = "BUILD_CITY";
+	public static final String BUILD_ROAD = "BUILD_ROAD";
+	public static final String PASS = "PASS";
+
 	/**
-	 * 
+	 *
 	 */
 	private int roundNumber;
 	/**
-	 * 
+	 *
 	 */
-	private int playerID;
+	private int playerId;
 	/**
-	 * 
+	 *
 	 */
 	private String description;
 
 	/**
-	 * 
+	 *
 	 * @param roundNumber
-	 * @param playerID
+	 * @param playerId
 	 * @param description
 	 */
-	public Action(int roundNumber, int playerID, String description) {
+	public Action(int roundNumber, int playerId, String description) {
 		this.roundNumber = roundNumber;
-		this.playerID = playerID;
+		this.playerId = playerId;
 		this.description = description;
 	}
 
@@ -47,6 +53,6 @@ public class Action {
 	 * @return
 	 */
 	public String toString() {
-		return "[" + roundNumber + "] / [" + playerID + "]: " + description;
+		return "[" + roundNumber + "] / [" + playerId + "]: " + description;
 	}
 }

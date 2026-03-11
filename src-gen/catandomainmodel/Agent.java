@@ -46,18 +46,18 @@ public class Agent {
 		// --- Linear scan of all possible actions ---
 
 		// 1. BUILD_SETTLEMENT: always available in this simplified simulator
-		validActions.add(new Action(roundNumber, player.getId(), "BUILD_SETTLEMENT"));
+		validActions.add(new Action(roundNumber, player.getId(), Action.BUILD_SETTLEMENT));
 
 		// 2. BUILD_CITY: only valid if the player already owns at least one settlement
 		if (!player.getStructures().isEmpty()) {
-			validActions.add(new Action(roundNumber, player.getId(), "BUILD_CITY"));
+			validActions.add(new Action(roundNumber, player.getId(), Action.BUILD_CITY));
 		}
 
 		// 3. BUILD_ROAD: always available in this simplified simulator
-		validActions.add(new Action(roundNumber, player.getId(), "BUILD_ROAD"));
+		validActions.add(new Action(roundNumber, player.getId(), Action.BUILD_ROAD));
 
 		// 4. PASS: always available as a fallback
-		validActions.add(new Action(roundNumber, player.getId(), "PASS"));
+		validActions.add(new Action(roundNumber, player.getId(), Action.PASS));
 
 		// --- Randomly pick one valid action ---
 		return chooseRandomAction(validActions);

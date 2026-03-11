@@ -6,34 +6,39 @@ package catandomainmodel;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /************************************************************/
 /**
- * 
+ *
  */
 public class Game {
+
+	private static final Logger LOGGER = Logger.getLogger(Game.class.getName());
+	private static final int VICTORY_POINTS_TO_WIN = 10;
+
 	/**
-	 * 
+	 *
 	 */
 	private List<Player> players;
 	/**
-	 * 
+	 *
 	 */
 	private Board board;
 	/**
-	 * 
+	 *
 	 */
 	private int currentRound;
 	/**
-	 * 
+	 *
 	 */
 	private Configuration configuration;
 	/**
-	 * 
+	 *
 	 */
 	private List<Agent> agents;
 	/**
-	 * 
+	 *
 	 */
 	private ResourceBank resourceBank;
 
@@ -74,7 +79,7 @@ public class Game {
 		// Each agent takes a turn, captures the chosen action, and applies it
 		for (Agent agent : agents) {
 			Action action = agent.takeTurn(currentRound, board, resourceBank);
-			System.out.println(action);
+			LOGGER.info(action.toString());
 			applyAction(action, agent.getPlayer());
 		}
 
@@ -91,9 +96,9 @@ public class Game {
 	private void applyAction(Action action, Player player) {
 		String desc = action.getDescription();
 
-		if (desc.equals("BUILD_SETTLEMENT")) {
+		if (desc.equals(Action.BUILD_SETTLEMENT)) {
 			player.addVictoryPoints(1);
-		} else if (desc.equals("BUILD_CITY")) {
+		} else if (desc.equals(Action.BUILD_CITY)) {
 			player.addVictoryPoints(2);
 		}
 		// BUILD_ROAD and PASS have no VP effect
@@ -109,9 +114,9 @@ public class Game {
 			return true;
 		}
 
-		// Check if any player has 10 victory points
+		// Check if any player has enough victory points to win
 		for (Player player : players) {
-			if (player.getVictoryPoints() >= 10) {
+			if (player.getVictoryPoints() >= VICTORY_POINTS_TO_WIN) {
 				return true;
 			}
 		}
@@ -150,7 +155,7 @@ public class Game {
 
 		Player winner = getWinner();
 		if (winner != null) {
-			System.out.println("Game Over! Winner: Player " + winner.getId() +
+			LOGGER.info("Game Over! Winner: Player " + winner.getId() +
 					" with " + winner.getVictoryPoints() + " victory points");
 		}
 	}
@@ -160,12 +165,11 @@ public class Game {
 	 * @return
 	 */
 	public void printRoundSummary() {
-		System.out.println("=== Round " + currentRound + " Summary ===");
+		LOGGER.info("=== Round " + currentRound + " Summary ===");
 		for (Player player : players) {
-			System.out.println("Player " + player.getId() + ": " +
+			LOGGER.info("Player " + player.getId() + ": " +
 					player.getVictoryPoints() + " VP");
 		}
-		System.out.println();
 	}
 
 	/**

@@ -7,22 +7,27 @@ package catandomainmodel;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /************************************************************/
 /**
- * 
+ *
  */
 public class Configuration {
+
+	private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
+	private static final int DEFAULT_MAX_ROUNDS = 500;
+
 	/**
-	 * 
+	 *
 	 */
 	private int maxRounds;
 
 	/**
-	 * 
+	 *
 	 */
 	public Configuration() {
-		this.maxRounds = 500; // Safety-net maximum; game should end via VP threshold first
+		this.maxRounds = DEFAULT_MAX_ROUNDS;
 	}
 
 	/**
@@ -42,9 +47,9 @@ public class Configuration {
 				}
 			}
 		} catch (IOException e) {
-			System.err.println("Error reading configuration file: " + e.getMessage());
+			LOGGER.warning("Error reading configuration file: " + e.getMessage());
 		} catch (NumberFormatException e) {
-			System.err.println("Error parsing maxRounds value: " + e.getMessage());
+			LOGGER.warning("Error parsing maxRounds value: " + e.getMessage());
 		}
 	}
 

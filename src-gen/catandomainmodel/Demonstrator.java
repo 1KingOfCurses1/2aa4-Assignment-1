@@ -11,24 +11,26 @@
 
 package catandomainmodel;
 
+import java.util.logging.Logger;
+
 /**
  * Demonstrator entry point for the Catan simulator.
  */
 public class Demonstrator {
 
+    private static final Logger LOGGER = Logger.getLogger(Demonstrator.class.getName());
+
     public static void main(String[] args) {
-        System.out.println("========================================");
-        System.out.println("   Settlers of Catan – Simulator Demo   ");
-        System.out.println("========================================");
-        System.out.println();
+        LOGGER.info("========================================");
+        LOGGER.info("   Settlers of Catan - Simulator Demo   ");
+        LOGGER.info("========================================");
 
         // Setup + execution fully encapsulated in Simulator
         Simulator simulator = new Simulator();
         simulator.run();
 
-        System.out.println();
-        System.out.println("========================================");
-        System.out.println("          Simulation Complete            ");
-        System.out.println("========================================");
+        LOGGER.info("========================================");
+        LOGGER.info("          Simulation Complete            ");
+        LOGGER.info("========================================");
     }
 }
