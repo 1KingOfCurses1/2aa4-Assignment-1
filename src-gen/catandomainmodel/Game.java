@@ -90,37 +90,127 @@ public class Game {
     public void playRound() {
         round++;
         for (int i = 0; i < agents.size(); i++) {
-            IAgent agent = agents.get(i);
-            Player player = players.get(i);
-
-            // If this is a HumanAgent, wait for "go" before the turn
-            if (agent instanceof HumanAgent humanAgent) {
-                humanAgent.waitForGo();
+            processPlayerTurn(agents.get(i), players.get(i));
+            if (checkTermination()) {
+                return;
             }
+        }
+    }
 
-            // Roll dice
+    private void processPlayerTurn(IAgent agent, Player player) {
+        TurnState turnState = new TurnState();
+        while (!turnState.isOver()) {
+            Action action = agent.takeTurn(round, board, resourceBank);
+            if (action == null) {
+                turnState.setOver(true);
+                continue;
+            }
+            executeGameAction(action, agent, player, turnState);
+            gameStateExporter.writeState(this);
+            if (checkTermination()) {
+                turnState.setOver(true);
+            }
+        }
+    }
+
+    private void executeGameAction(Action action, IAgent agent, Player player, TurnState turnState) {
+        switch (action.getActionType()) {
+            case PASS:
+                handlePassAction(action, agent, turnState);
+                break;
+            case ROLL:
+                handleRollAction(player, turnState);
+                break;
+            case LIST:
+                printList(player);
+                break;
+            default:
+                handleBuildAndApplyAction(action, player, turnState);
+                break;
+        }
+    }
+
+    private void handlePassAction(Action action, IAgent agent, TurnState turnState) {
+        turnState.setOver(true);
+        if (agent instanceof Agent) {
+            LOGGER.log(Level.INFO, "  {0}", action);
+        }
+    }
+
+    private void handleRollAction(Player player, TurnState turnState) {
+        if (!turnState.hasRolled()) {
             int diceRoll = rollDiceForPlayer();
             LOGGER.log(Level.INFO, "Player {0} rolled: {1}", new Object[] { player.getId(), diceRoll });
-
-            // Resolve roll
             distributeResources(diceRoll);
-
-            // Robber check
             if (diceRoll == 7) {
                 resolveRobber(player);
             }
-
-            // Agent chooses and returns an action
-            Action action = agent.takeTurn(round, board, resourceBank);
-            LOGGER.log(Level.INFO, "  {0}", action);
-
-            if (action != null) {
-                applyAction(action, player);
-            }
-
-            // Overwrite state.json after each turn/action (per user request)
-            gameStateExporter.writeState(this);
+            turnState.setHasRolled(true);
+        } else {
+            LOGGER.log(Level.INFO, "  Already rolled this turn.");
         }
+    }
+
+    private void handleBuildAndApplyAction(Action action, Player player, TurnState turnState) {
+        LOGGER.log(Level.INFO, "  {0}", action);
+        if (turnState.hasRolled()) {
+            applyAction(action, player);
+        } else {
+            LOGGER.log(Level.INFO, "  You must roll first!");
+        }
+    }
+
+    /**
+     * Helper to track turn state (rolled, over).
+     */
+    private static class TurnState {
+        private boolean hasRolled = false;
+        private boolean over = false;
+
+        public boolean hasRolled() {
+            return hasRolled;
+        }
+
+        public void setHasRolled(boolean rolled) {
+            this.hasRolled = rolled;
+        }
+
+        public boolean isOver() {
+            return over;
+        }
+
+        public void setOver(boolean over) {
+            this.over = over;
+        }
+    }
+
+    private void printList(Player player) {
+        LOGGER.info("--- Legal Build Targets (IDs refer to Node intersections, NOT tile numbers) ---");
+
+        List<Integer> validSettlements = new ArrayList<>();
+        List<Integer> validCities = new ArrayList<>();
+        for (Node n : board.getNodes()) {
+            if (board.isValidSettlementPlacement(n, player)) {
+                validSettlements.add(n.getId());
+            }
+            if (board.isValidCityPlacement(n, player)) {
+                validCities.add(n.getId());
+            }
+        }
+
+        List<String> validRoads = new ArrayList<>();
+        for (Edge e : board.getEdges()) {
+            if (board.isValidRoadPlacement(e, player)) {
+                if (e.getNodes().size() == 2) {
+                    validRoads.add(String.format("%d-%d", e.getNodes().get(0).getId(), e.getNodes().get(1).getId()));
+                }
+            }
+        }
+
+        LOGGER.log(Level.INFO, "Settlement placements: {0}", validSettlements);
+        LOGGER.log(Level.INFO, "City upgrades: {0}", validCities);
+        LOGGER.log(Level.INFO, "Road placements (from-to): {0}", validRoads);
+        LOGGER.info("-------------------------------------------------------------------------");
     }
 
     /**
@@ -215,12 +305,19 @@ public class Game {
                 int fromId = Integer.parseInt(parts[1]);
                 int toId = Integer.parseInt(parts[2]);
                 Edge targetEdge = findEdge(fromId, toId);
-                if (targetEdge != null && board.isValidRoadPlacement(targetEdge, player)) {
+                if (targetEdge == null) {
+                    LOGGER.info(
+                            () -> String.format("    Failed: No edge exists between nodes %d and %d", fromId, toId));
+                } else if (targetEdge.getRoad() != null) {
+                    LOGGER.info(() -> String.format("    Failed: Edge %d-%d already has a road", fromId, toId));
+                } else if (!board.isValidRoadPlacement(targetEdge, player)) {
+                    LOGGER.info(() -> String.format(
+                            "    Failed: Road at %d-%d must connect to your building or road (and not be blocked)",
+                            fromId, toId));
+                } else {
                     Road r = new Road(player, targetEdge);
                     targetEdge.setRoad(r);
                     LOGGER.info(() -> String.format("    Successfully built Road from %d to %d", fromId, toId));
-                } else {
-                    LOGGER.info(() -> String.format("    Failed: Invalid road placement from %d to %d", fromId, toId));
                 }
             } else {
                 for (Edge e : board.getEdges()) {

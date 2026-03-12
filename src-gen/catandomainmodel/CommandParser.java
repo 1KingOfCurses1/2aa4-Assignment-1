@@ -26,6 +26,8 @@ public class CommandParser {
             Pattern.compile("^\\s*roll\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern LIST_PATTERN =
             Pattern.compile("^\\s*list\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PASS_PATTERN =
+            Pattern.compile("^\\s*(pass|go)\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern BUILD_SETTLEMENT_PATTERN =
             Pattern.compile("^\\s*build\\s+settlement\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern BUILD_CITY_PATTERN =
@@ -57,6 +59,12 @@ public class CommandParser {
         m = LIST_PATTERN.matcher(input);
         if (m.matches()) {
             return new Action(0, 0, "LIST", ActionType.LIST);
+        }
+
+        // pass/go
+        m = PASS_PATTERN.matcher(input);
+        if (m.matches()) {
+            return new Action(0, 0, "PASS", ActionType.PASS);
         }
 
         // build settlement <nodeId>

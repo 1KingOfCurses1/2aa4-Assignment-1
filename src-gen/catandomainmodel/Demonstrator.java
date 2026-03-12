@@ -49,8 +49,9 @@ public class Demonstrator {
         LOGGER.log(Level.INFO, "Game created with {0} players.", players.size());
         LOGGER.info("Player 4 is the human player.\n");
 
-        // Write the base map once before starting the game
+        // Write the base map and initial state before starting the game
         game.getGameStateExporter().writeBaseMap(board);
+        game.getGameStateExporter().writeState(game);
 
         // Run the simulation
         game.startGame();
@@ -79,10 +80,13 @@ public class Demonstrator {
             }
 
             ProcessBuilder pb = new ProcessBuilder(
-                    "python",
+                    "../2aa4-2026-base/assignments/visualize/.venv/bin/python3",
                     visFile.getAbsolutePath(),
                     "base_map.json",
-                    "state.json");
+                    "state.json",
+                    "--out-dir",
+                    "scraped_boards");
+            pb.directory(visFile.getParentFile());
             pb.inheritIO(); // Pipe python output to java console
             Process process = pb.start();
             process.waitFor();
@@ -113,7 +117,7 @@ public class Demonstrator {
         int[] numbers = { 2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12, 0 };
 
         for (int i = 0; i < types.length; i++) {
-            tiles.add(new Tile(i + 1, types[i], numbers[i]));
+            tiles.add(new Tile(i, types[i], numbers[i]));
         }
         return tiles;
     }
@@ -123,7 +127,7 @@ public class Demonstrator {
      */
     private static List<Node> createNodes() {
         List<Node> nodes = new ArrayList<>();
-        for (int i = 1; i <= 54; i++) {
+        for (int i = 0; i <= 53; i++) {
             nodes.add(new Node(i));
         }
         return nodes;
@@ -135,25 +139,21 @@ public class Demonstrator {
      */
     private static List<Edge> createEdges(List<Node> nodes) {
         List<Edge> edges = new ArrayList<>();
-        // Create edges connecting sequential node pairs (simplified topology)
+        // Create edges connecting using accurately mapped topology
         int[][] connections = {
-                { 1, 2 }, { 2, 3 }, { 3, 4 }, { 4, 5 }, { 5, 6 }, { 6, 7 },
-                { 7, 8 }, { 8, 9 }, { 9, 10 }, { 10, 11 }, { 11, 12 }, { 12, 13 },
-                { 13, 14 }, { 14, 15 }, { 15, 16 }, { 16, 17 }, { 17, 18 },
-                { 1, 9 }, { 2, 10 }, { 3, 11 }, { 4, 12 }, { 5, 13 }, { 6, 14 },
-                { 8, 17 }, { 9, 18 }, { 10, 19 }, { 11, 20 }, { 12, 21 }, { 13, 22 },
-                { 15, 24 }, { 16, 25 }, { 17, 26 }, { 18, 27 }, { 19, 28 }, { 20, 29 },
-                { 22, 31 }, { 23, 32 }, { 24, 33 }, { 25, 34 }, { 26, 35 }, { 27, 36 },
-                { 28, 37 }, { 29, 38 }, { 30, 39 }, { 31, 40 }, { 32, 41 }, { 33, 42 },
-                { 34, 43 }, { 35, 44 }, { 36, 45 }, { 37, 46 }, { 38, 47 }, { 39, 48 },
-                { 40, 49 }, { 41, 50 }, { 42, 51 }, { 43, 52 }, { 44, 53 }, { 45, 54 },
-                { 46, 47 }, { 47, 48 }, { 48, 49 }, { 49, 50 }, { 50, 51 }, { 51, 52 },
-                { 52, 53 }, { 53, 54 },
-                { 7, 18 }, { 14, 23 }, { 21, 30 }, { 19, 8 }, { 20, 9 }
+                { 0, 1 }, { 0, 5 }, { 0, 17 }, { 1, 2 }, { 1, 21 }, { 2, 3 }, { 2, 6 }, { 3, 4 }, { 3, 9 },
+                { 4, 5 }, { 4, 12 }, { 5, 13 }, { 6, 7 }, { 6, 23 }, { 7, 8 }, { 7, 24 }, { 8, 9 }, { 8, 27 },
+                { 9, 10 }, { 10, 11 }, { 10, 29 }, { 11, 12 }, { 11, 32 }, { 12, 14 }, { 13, 15 }, { 13, 18 },
+                { 14, 15 }, { 14, 34 }, { 15, 35 }, { 16, 17 }, { 16, 18 }, { 16, 41 }, { 17, 19 }, { 18, 38 },
+                { 19, 20 }, { 19, 44 }, { 20, 21 }, { 20, 47 }, { 21, 22 }, { 22, 23 }, { 22, 49 }, { 23, 52 },
+                { 24, 25 }, { 24, 53 }, { 25, 26 }, { 26, 27 }, { 27, 28 }, { 28, 29 }, { 29, 30 }, { 30, 31 },
+                { 31, 32 }, { 32, 33 }, { 33, 34 }, { 34, 36 }, { 35, 37 }, { 35, 39 }, { 36, 37 }, { 38, 39 },
+                { 38, 42 }, { 40, 41 }, { 40, 42 }, { 41, 43 }, { 43, 44 }, { 44, 45 }, { 45, 46 }, { 46, 47 },
+                { 47, 48 }, { 48, 49 }, { 49, 50 }, { 50, 51 }, { 51, 52 }, { 52, 53 }
         };
 
         for (int i = 0; i < connections.length; i++) {
-            Edge e = new Edge(i + 1);
+            Edge e = new Edge(i);
             int fromId = connections[i][0];
             int toId = connections[i][1];
             // Find nodes by ID
