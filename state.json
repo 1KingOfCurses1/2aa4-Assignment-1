@@ -1,9 +1,5 @@
 {
-  "round": 1,
-  "buildings": [
-
-  ],
-  "roads": [
-
-  ]
+  "round": 0,
+  "buildings": [],
+  "roads": []
 }

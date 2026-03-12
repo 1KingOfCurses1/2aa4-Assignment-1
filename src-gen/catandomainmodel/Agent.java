@@ -18,6 +18,8 @@ public class Agent implements IAgent {
 
     private Player player;
     private Random random;
+    private int currentRound = -1;
+    private boolean hasRolledThisTurn = false;
 
     public Agent(Player player) {
         this.player = player;
@@ -52,11 +54,18 @@ public class Agent implements IAgent {
      */
     @Override
     public Action takeTurn(int roundNumber, Board board, ResourceBank resourceBank) {
-        rollDice();
+        if (currentRound != roundNumber) {
+            currentRound = roundNumber;
+            hasRolledThisTurn = false;
+        }
+
+        if (!hasRolledThisTurn) {
+            hasRolledThisTurn = true;
+            return new Action(roundNumber, player.getId(), "ROLL", ActionType.ROLL);
+        }
 
         // Build available actions
         List<Action> actions = new ArrayList<>();
-        actions.add(new Action(roundNumber, player.getId(), "ROLL", ActionType.ROLL));
         actions.add(new Action(roundNumber, player.getId(), "BUILD_SETTLEMENT", ActionType.BUILD_SETTLEMENT));
         actions.add(new Action(roundNumber, player.getId(), "BUILD_ROAD", ActionType.BUILD_ROAD));
         actions.add(new Action(roundNumber, player.getId(), "PASS", ActionType.PASS));
@@ -66,7 +75,11 @@ public class Agent implements IAgent {
             actions.add(new Action(roundNumber, player.getId(), "BUILD_CITY", ActionType.BUILD_CITY));
         }
 
-        return chooseRandomAction(actions);
+        Action chosen = chooseRandomAction(actions);
+        if (chosen != null && chosen.getActionType() == ActionType.PASS) {
+            hasRolledThisTurn = false;
+        }
+        return chosen;
     }
 
     /**

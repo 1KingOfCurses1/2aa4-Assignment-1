@@ -93,34 +93,80 @@ public class Game {
             IAgent agent = agents.get(i);
             Player player = players.get(i);
 
-            // If this is a HumanAgent, wait for "go" before the turn
-            if (agent instanceof HumanAgent humanAgent) {
-                humanAgent.waitForGo();
+            boolean hasRolled = false;
+            boolean turnOver = false;
+
+            while (!turnOver) {
+                Action action = agent.takeTurn(round, board, resourceBank);
+                if (action == null) {
+                    turnOver = true;
+                    continue;
+                }
+
+                if (action.getActionType() == ActionType.PASS) {
+                    turnOver = true;
+                    if (agent instanceof Agent) {
+                        LOGGER.log(Level.INFO, "  {0}", action);
+                    }
+                } else if (action.getActionType() == ActionType.ROLL) {
+                    if (!hasRolled) {
+                        int diceRoll = rollDiceForPlayer();
+                        LOGGER.log(Level.INFO, "Player {0} rolled: {1}", new Object[] { player.getId(), diceRoll });
+                        distributeResources(diceRoll);
+                        if (diceRoll == 7) {
+                            resolveRobber(player);
+                        }
+                        hasRolled = true;
+                    } else {
+                        LOGGER.log(Level.INFO, "  Already rolled this turn.");
+                    }
+                } else if (action.getActionType() == ActionType.LIST) {
+                    printList(player);
+                } else {
+                    LOGGER.log(Level.INFO, "  {0}", action);
+                    if (hasRolled) {
+                        applyAction(action, player);
+                        if (checkTermination()) {
+                            return;
+                        }
+                    } else {
+                        LOGGER.log(Level.INFO, "  You must roll first!");
+                    }
+                }
+
+                // Overwrite state.json after each turn/action (per user request)
+                gameStateExporter.writeState(this);
             }
-
-            // Roll dice
-            int diceRoll = rollDiceForPlayer();
-            LOGGER.log(Level.INFO, "Player {0} rolled: {1}", new Object[] { player.getId(), diceRoll });
-
-            // Resolve roll
-            distributeResources(diceRoll);
-
-            // Robber check
-            if (diceRoll == 7) {
-                resolveRobber(player);
-            }
-
-            // Agent chooses and returns an action
-            Action action = agent.takeTurn(round, board, resourceBank);
-            LOGGER.log(Level.INFO, "  {0}", action);
-
-            if (action != null) {
-                applyAction(action, player);
-            }
-
-            // Overwrite state.json after each turn/action (per user request)
-            gameStateExporter.writeState(this);
         }
+    }
+
+    private void printList(Player player) {
+        LOGGER.info("--- Legal Build Targets (IDs refer to Node intersections, NOT tile numbers) ---");
+        
+        List<Integer> validSettlements = new ArrayList<>();
+        List<Integer> validCities = new ArrayList<>();
+        for (Node n : board.getNodes()) {
+            if (board.isValidSettlementPlacement(n, player)) {
+                validSettlements.add(n.getId());
+            }
+            if (board.isValidCityPlacement(n, player)) {
+                validCities.add(n.getId());
+            }
+        }
+        
+        List<String> validRoads = new ArrayList<>();
+        for (Edge e : board.getEdges()) {
+            if (board.isValidRoadPlacement(e, player)) {
+                if (e.getNodes().size() == 2) {
+                    validRoads.add(String.format("%d-%d", e.getNodes().get(0).getId(), e.getNodes().get(1).getId()));
+                }
+            }
+        }
+        
+        LOGGER.log(Level.INFO, "Settlement placements: {0}", validSettlements);
+        LOGGER.log(Level.INFO, "City upgrades: {0}", validCities);
+        LOGGER.log(Level.INFO, "Road placements (from-to): {0}", validRoads);
+        LOGGER.info("-------------------------------------------------------------------------");
     }
 
     /**

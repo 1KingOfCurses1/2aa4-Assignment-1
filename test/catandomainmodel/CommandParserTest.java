@@ -115,10 +115,14 @@ class CommandParserTest {
     }
 
     @Test
-    void testGoIsHandledCorrectlyAsNotGameplayAction() {
-        // "go" is NOT a gameplay action, so the parser (which returns Actions) should
-        // return null.
-        // The HumanAgent handles "go" internally as step-forward control.
-        assertNull(parser.parse("go"), "'go' should not be parsed as a normal action");
+    void testParsePassAndGo() {
+        // "go" and "pass" are explicit actions that end the loop.
+        Action a = parser.parse("go");
+        assertNotNull(a);
+        assertEquals(ActionType.PASS, a.getActionType());
+        
+        Action b = parser.parse("pass");
+        assertNotNull(b);
+        assertEquals(ActionType.PASS, b.getActionType());
     }
 }
