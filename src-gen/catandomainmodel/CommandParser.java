@@ -13,27 +13,25 @@ import java.util.regex.Pattern;
  * Responsibility: parsing only — no game logic.
  *
  * Supported commands (case-insensitive):
- *   roll
- *   list
- *   build settlement <nodeId>
- *   build city <nodeId>
- *   build road <fromNodeId> <toNodeId>
+ * roll
+ * list
+ * build settlement <nodeId>
+ * build city <nodeId>
+ * build road <fromNodeId> <toNodeId>
+ * pass
  */
 public class CommandParser {
 
     // Patterns compiled once for performance
-    private static final Pattern ROLL_PATTERN =
-            Pattern.compile("^\\s*roll\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern LIST_PATTERN =
-            Pattern.compile("^\\s*list\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PASS_PATTERN =
-            Pattern.compile("^\\s*(pass|go)\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern BUILD_SETTLEMENT_PATTERN =
-            Pattern.compile("^\\s*build\\s+settlement\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern BUILD_CITY_PATTERN =
-            Pattern.compile("^\\s*build\\s+city\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern BUILD_ROAD_PATTERN =
-            Pattern.compile("^\\s*build\\s+road\\s+(\\d+)\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ROLL_PATTERN = Pattern.compile("^\\s*roll\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern LIST_PATTERN = Pattern.compile("^\\s*list\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PASS_PATTERN = Pattern.compile("^\\s*pass\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern BUILD_SETTLEMENT_PATTERN = Pattern.compile("^\\s*build\\s+settlement\\s+(\\d+)\\s*$",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern BUILD_CITY_PATTERN = Pattern.compile("^\\s*build\\s+city\\s+(\\d+)\\s*$",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern BUILD_ROAD_PATTERN = Pattern.compile("^\\s*build\\s+road\\s+(\\d+)\\s+(\\d+)\\s*$",
+            Pattern.CASE_INSENSITIVE);
 
     /**
      * Parses the given input string into an Action.
