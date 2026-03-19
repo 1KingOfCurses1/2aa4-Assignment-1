@@ -40,9 +40,10 @@ public class Demonstrator {
 
         // --- Create agents: 3 AI + 1 Human ---
         List<IAgent> agents = new ArrayList<>();
-        agents.add(new Agent(p1)); // AI
-        agents.add(new Agent(p2)); // AI
-        agents.add(new Agent(p3)); // AI
+        DecisionStrategy ruleStrategy = new RuleBasedDecisionStrategy();
+        agents.add(new Agent(p1, ruleStrategy)); // AI with Rule-Based Strategy
+        agents.add(new Agent(p2, ruleStrategy)); // AI with Rule-Based Strategy
+        agents.add(new Agent(p3, ruleStrategy)); // AI with Rule-Based Strategy
         agents.add(new HumanAgent(p4)); // Human (Player 4)
 
         // --- Create and start the game ---

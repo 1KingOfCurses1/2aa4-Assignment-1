@@ -18,6 +18,15 @@ public class GameStateExporter {
     private static final String DEFAULT_BASE_MAP_PATH = "../2aa4-2026-base/assignments/visualize/base_map.json";
     private static final String DEFAULT_STATE_PATH = "../2aa4-2026-base/assignments/visualize/state.json";
 
+    private static final int[] NODE_TRANSLATION = {
+        1, 2, 3, 4, 5, 0, 6, 7, 8, 9, 
+        10, 11, 12, 14, 15, 13, 17, 18, 16, 20, 
+        21, 19, 22, 23, 24, 25, 26, 27, 28, 29, 
+        30, 31, 32, 33, 34, 36, 37, 35, 39, 38, 
+        41, 42, 40, 44, 43, 45, 47, 46, 48, 49, 
+        50, 51, 52, 53
+    };
+
     private String baseMapPath;
     private String statePath;
 
@@ -133,7 +142,7 @@ public class GameStateExporter {
 
                 String typeStr = (s instanceof City) ? "CITY" : "SETTLEMENT";
                 sb.append(JSON_START_BRACE)
-                        .append("\"node\": ").append(s.getLocation().getId()).append(", ")
+                        .append("\"node\": ").append(NODE_TRANSLATION[s.getLocation().getId()]).append(", ")
                         .append("\"owner\": \"").append(color).append("\", ")
                         .append("\"type\": \"").append(typeStr).append("\"")
                         .append("}");
