@@ -174,15 +174,7 @@ public class GameStateExporter {
                 int minNode = Math.min(nodeA, nodeB);
                 int maxNode = Math.max(nodeA, nodeB);
 
-                boolean isValidCanonicalEdge = false;
-                for (int[] canonical : canonicalEdges) {
-                    int cMin = Math.min(canonical[0], canonical[1]);
-                    int cMax = Math.max(canonical[0], canonical[1]);
-                    if (cMin == minNode && cMax == maxNode) {
-                        isValidCanonicalEdge = true;
-                        break;
-                    }
-                }
+                boolean isValidCanonicalEdge = isCanonicalEdge(minNode, maxNode, canonicalEdges);
 
                 if (!isValidCanonicalEdge) {
                     LOGGER.log(Level.WARNING, "Skipping invalid road export from {0} to {1}. Edge not canonical.",
@@ -254,5 +246,16 @@ public class GameStateExporter {
     // but demonstrating properly calling the two exports in Demonstrator.
     public void write(Game game) {
         writeState(game);
+    }
+
+    private boolean isCanonicalEdge(int minNode, int maxNode, int[][] canonicalEdges) {
+        for (int[] canonical : canonicalEdges) {
+            int cMin = Math.min(canonical[0], canonical[1]);
+            int cMax = Math.max(canonical[0], canonical[1]);
+            if (cMin == minNode && cMax == maxNode) {
+                return true;
+            }
+        }
+        return false;
     }
 }
