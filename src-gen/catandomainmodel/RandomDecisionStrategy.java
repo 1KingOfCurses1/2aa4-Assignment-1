@@ -12,7 +12,9 @@ public class RandomDecisionStrategy implements DecisionStrategy {
     private Random random = new SecureRandom();
 
     @Override
-    public Action chooseAction(Player player, Board board, ResourceBank resourceBank, int round) {
+    public Action chooseAction(Game game, Player player) {
+        Board board = game.getBoard();
+        int round = game.getRound();
         List<Action> availableActions = new ArrayList<>();
         
         // Check for legal settlements

@@ -55,6 +55,9 @@ public class Demonstrator {
         game.getGameStateExporter().writeBaseMap(board);
         game.getGameStateExporter().writeState(game);
 
+        // Seed initial state for AI verification (Task 2)
+        setupVerificationScenario(game);
+
         // Run the simulation
         game.startGame();
 
@@ -69,6 +72,14 @@ public class Demonstrator {
 
         LOGGER.info("Done.");
     }
+
+    private static void setupVerificationScenario(Game game) {
+        LOGGER.info(">>> Regular Setup sequence initializing (no pre-seeded Verification Scenario) <<<");
+        // We will no longer seed any early structures or resources here,
+        // so that the 8-step Setup Phase correctly builds from zero.
+    }
+
+    // findEdge method removed as it is no longer used by the verification scenario.
 
     private static void launchVisualizer() {
         LOGGER.info("Attempting to launch Python Visualizer...");
@@ -105,15 +116,15 @@ public class Demonstrator {
     /**
      * Maps the 6 encompassing nodes for each of the 19 tiles.
      */
-    private static void mapNodesToTiles(List<Tile> tiles, List<Node> nodes) {
+    public static void mapNodesToTiles(List<Tile> tiles, List<Node> nodes) {
         // Standard Catan node-to-tile mapping (topology dependent)
         int[][] mapping = {
                 { 0, 1, 2, 3, 4, 5 }, // Tile 0
-                { 0, 5, 13, 15, 18, 17 }, // Tile 1
-                { 1, 2, 6, 23, 22, 21 }, // Tile 2
-                { 2, 3, 9, 8, 7, 6 }, // Tile 3
-                { 3, 4, 12, 11, 10, 9 }, // Tile 4
-                { 4, 5, 13, 14, 11, 12 }, // Tile 5
+                { 1, 2, 6, 23, 22, 21 }, // Tile 1
+                { 2, 3, 9, 8, 7, 6 }, // Tile 2
+                { 3, 4, 12, 11, 10, 9 }, // Tile 3
+                { 4, 5, 13, 14, 11, 12 }, // Tile 4
+                { 0, 5, 13, 15, 18, 17 }, // Tile 5
                 { 0, 1, 21, 20, 19, 17 }, // Tile 6
                 { 15, 18, 38, 39, 36, 35 }, // Tile 7
                 { 5, 13, 15, 35, 34, 14 }, // Tile 8
@@ -144,7 +155,7 @@ public class Demonstrator {
     /**
      * Creates the 19 standard Catan hex tiles.
      */
-    private static List<Tile> createTiles() {
+    public static List<Tile> createTiles() {
         List<Tile> tiles = new ArrayList<>();
         ResourceType[] types = {
                 ResourceType.LUMBER, ResourceType.WOOL, ResourceType.GRAIN,
@@ -166,7 +177,7 @@ public class Demonstrator {
     /**
      * Creates 54 nodes (standard Catan board intersections).
      */
-    private static List<Node> createNodes() {
+    public static List<Node> createNodes() {
         List<Node> nodes = new ArrayList<>();
         for (int i = 0; i <= 53; i++) {
             nodes.add(new Node(i));
@@ -178,15 +189,15 @@ public class Demonstrator {
      * Creates 72 edges connecting adjacent nodes.
      * Simplified connectivity for demonstration.
      */
-    private static List<Edge> createEdges(List<Node> nodes) {
+    public static List<Edge> createEdges(List<Node> nodes) {
         List<Edge> edges = new ArrayList<>();
         // Create edges connecting using accurately mapped topology
         int[][] connections = {
-                { 0, 1 }, { 0, 5 }, { 0, 17 }, { 1, 2 }, { 1, 21 }, { 2, 3 }, { 2, 6 }, { 3, 4 }, { 3, 9 },
-                { 4, 5 }, { 4, 12 }, { 5, 13 }, { 6, 7 }, { 6, 23 }, { 7, 8 }, { 7, 24 }, { 8, 9 }, { 8, 27 },
-                { 9, 10 }, { 10, 11 }, { 10, 29 }, { 11, 12 }, { 11, 32 }, { 12, 14 }, { 13, 15 }, { 13, 18 },
-                { 14, 15 }, { 14, 34 }, { 15, 35 }, { 16, 17 }, { 16, 18 }, { 16, 41 }, { 17, 19 }, { 18, 38 },
-                { 19, 20 }, { 19, 44 }, { 20, 21 }, { 20, 47 }, { 21, 22 }, { 22, 23 }, { 22, 49 }, { 23, 52 },
+                { 0, 1 }, { 0, 5 }, { 0, 20 }, { 1, 2 }, { 1, 6 }, { 2, 3 }, { 2, 9 }, { 3, 4 }, { 3, 12 },
+                { 4, 5 }, { 4, 15 }, { 5, 16 }, { 6, 7 }, { 6, 23 }, { 7, 8 }, { 7, 24 }, { 8, 9 }, { 8, 27 },
+                { 9, 10 }, { 10, 11 }, { 10, 29 }, { 11, 12 }, { 11, 32 }, { 12, 13 }, { 13, 14 }, { 13, 34 },
+                { 14, 15 }, { 14, 37 }, { 15, 17 }, { 16, 5 }, { 16, 18 }, { 16, 21 }, { 17, 39 }, { 17, 18 }, { 18, 40 },
+                { 19, 20 }, { 19, 46 }, { 19, 21 }, { 20, 0 }, { 20, 22 }, { 21, 43 }, { 22, 23 }, { 22, 49 }, { 23, 52 },
                 { 24, 25 }, { 24, 53 }, { 25, 26 }, { 26, 27 }, { 27, 28 }, { 28, 29 }, { 29, 30 }, { 30, 31 },
                 { 31, 32 }, { 32, 33 }, { 33, 34 }, { 34, 36 }, { 35, 37 }, { 35, 39 }, { 36, 37 }, { 38, 39 },
                 { 38, 42 }, { 40, 41 }, { 40, 42 }, { 41, 43 }, { 43, 44 }, { 44, 45 }, { 45, 46 }, { 46, 47 },

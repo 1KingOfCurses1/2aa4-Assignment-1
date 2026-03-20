@@ -64,19 +64,19 @@ public class Agent implements IAgent {
      * Turn automaton: roll → resolve → choose action via strategy.
      */
     @Override
-    public Action takeTurn(int roundNumber, Board board, ResourceBank resourceBank) {
-        if (currentRound != roundNumber) {
-            currentRound = roundNumber;
+    public Action takeTurn(Game game) {
+        if (currentRound != game.getRound()) {
+            currentRound = game.getRound();
             hasRolledThisTurn = false;
         }
 
         if (!hasRolledThisTurn) {
             hasRolledThisTurn = true;
-            return new Action(roundNumber, player.getId(), "ROLL", ActionType.ROLL);
+            return new Action(currentRound, player.getId(), "ROLL", ActionType.ROLL);
         }
 
         // Delegate decision making to the strategy
-        Action chosen = strategy.chooseAction(player, board, resourceBank, roundNumber);
+        Action chosen = strategy.chooseAction(game, player);
         
         if (chosen != null && chosen.getActionType() == ActionType.PASS) {
             hasRolledThisTurn = false;

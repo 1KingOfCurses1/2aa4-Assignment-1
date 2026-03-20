@@ -21,6 +21,22 @@ import java.util.logging.Logger;
 public class Game {
     private static final Logger LOGGER = Logger.getLogger(Game.class.getName());
 
+    // --- Cost maps (used for affordability guards) ---
+    private static final java.util.Map<ResourceType, Integer> SETTLEMENT_COST = new java.util.EnumMap<>(ResourceType.class);
+    private static final java.util.Map<ResourceType, Integer> CITY_COST      = new java.util.EnumMap<>(ResourceType.class);
+    private static final java.util.Map<ResourceType, Integer> ROAD_COST      = new java.util.EnumMap<>(ResourceType.class);
+
+    static {
+        SETTLEMENT_COST.put(ResourceType.BRICK,  1);
+        SETTLEMENT_COST.put(ResourceType.LUMBER, 1);
+        SETTLEMENT_COST.put(ResourceType.WOOL,   1);
+        SETTLEMENT_COST.put(ResourceType.GRAIN,  1);
+        CITY_COST.put(ResourceType.ORE,   3);
+        CITY_COST.put(ResourceType.GRAIN, 2);
+        ROAD_COST.put(ResourceType.BRICK,  1);
+        ROAD_COST.put(ResourceType.LUMBER, 1);
+    }
+
     private List<Player> players;
     private Board board;
     private int round;
@@ -31,17 +47,23 @@ public class Game {
     private CommandManager commandManager;
     private Random random;
     private Scanner scanner;
+    /** True once the 8-step setup phase finishes; triggers resource/legality guards. */
+    private boolean setupComplete = false;
+
+    // --- Longest Road Tracking ---
+    private Player longestRoadHolder = null;
+    private int longestRoadLength = 4; // minimum threshold is 5
 
     public Game(Board board, List<Player> players, List<IAgent> agents) {
         this.board = board;
         this.players = new ArrayList<>(players);
-        this.agents = new ArrayList<>(agents);
-        this.round = 0;
-        this.configuration = new Configuration();
-        this.resourceBank = new ResourceBank();
+        this.agents  = new ArrayList<>(agents);
+        this.round   = 0;
+        this.configuration    = new Configuration();
+        this.resourceBank     = new ResourceBank();
         this.gameStateExporter = new GameStateExporter();
-        this.commandManager = new CommandManager();
-        this.random = new SecureRandom();
+        this.commandManager   = new CommandManager();
+        this.random  = new SecureRandom();
         this.scanner = new Scanner(System.in);
     }
 
@@ -73,11 +95,21 @@ public class Game {
         return gameStateExporter;
     }
 
+    public Player getLongestRoadHolder() {
+        return longestRoadHolder;
+    }
+
+    public int getLongestRoadLength() {
+        return longestRoadLength;
+    }
+
     /**
      * Runs the full game until termination.
      */
     public void startGame() {
         LOGGER.info("=== Catan Simulation Started ===");
+        runSetupPhase();
+        setupComplete = true;
         while (!checkTermination()) {
             playRound();
             printRoundSummary();
@@ -89,6 +121,222 @@ public class Game {
                     new Object[] { winner.getId(), winner.getVictoryPoints() });
         } else {
             LOGGER.info("\n=== Game Over! Max rounds reached. No winner. ===");
+        }
+    }
+
+    /**
+     * Runs the Catan setup phase: snake order (0→1→2→…→N-1→N-1→…→1→0).
+     * Each player places exactly 1 settlement + 1 connected road per step.
+     * No rolling, no resource cost, no cities.
+     * On the return steps (second half), the placed settlement grants starting
+     * resources from each adjacent non-desert tile.
+     */
+    private void runSetupPhase() {
+        int n = players.size();
+        // Build snake order: forward 0..N-1 then backward N-1..0
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < n; i++) order.add(i);
+        for (int i = n - 1; i >= 0; i--) order.add(i);
+
+        LOGGER.log(Level.INFO, "=== Setup Phase (8 placement turns for {0} players) ===", n);
+
+        int totalSteps = order.size(); // 2*n
+        for (int step = 0; step < totalSteps; step++) {
+            int idx          = order.get(step);
+            boolean isReturn = (step >= n); // Second half = return round
+            Player player    = players.get(idx);
+            IAgent  agent    = agents.get(idx);
+
+            LOGGER.log(Level.INFO, "  Setup turn {0}/{1}: Player {2} ({3})",
+                    new Object[]{step + 1, totalSteps, player.getId(),
+                                 isReturn ? "return" : "forward"});
+
+            doSetupTurn(agent, player, isReturn);
+            validateSetupState();
+            gameStateExporter.writeState(this);
+        }
+        LOGGER.info("=== Setup Phase Complete ===");
+    }
+
+    /**
+     * Strict backend verification that setup rules are not violated.
+     * Enforces max 2 settlements, max 2 roads, and 0 cities per player during setup.
+     */
+    private void validateSetupState() {
+        for (Player p : players) {
+            int settlements = 0;
+            int cities = 0;
+            for (Structure s : p.getStructures()) {
+                if (s instanceof Settlement) settlements++;
+                if (s instanceof City) cities++;
+            }
+            int roads = 0;
+            for (Edge e : board.getEdges()) {
+                if (e.getRoad() != null && e.getRoad().getOwner().getId() == p.getId()) {
+                    roads++;
+                }
+            }
+            if (settlements > 2 || roads > 2 || cities > 0) {
+                LOGGER.log(Level.SEVERE, "Setup State Validation Failed for Player {0}: " +
+                        "{1} Settlements, {2} Roads, {3} Cities",
+                        new Object[]{p.getId(), settlements, roads, cities});
+                throw new IllegalStateException("Setup phase limits exceeded for player " + p.getId());
+            }
+        }
+    }
+
+    /**
+     * One setup turn: place 1 settlement (free) then 1 road (free).
+     * On return turns, grant starting resources after the settlement.
+     */
+    private void doSetupTurn(IAgent agent, Player player, boolean isReturn) {
+        // --- Place settlement ---
+        Node chosen = pickSetupSettlement(agent, player);
+        if (chosen == null) {
+            LOGGER.log(Level.WARNING, "  Setup: Player {0} could not place a settlement.",
+                    player.getId());
+            return;
+        }
+        Settlement s = new Settlement(player, chosen);
+        player.addStructure(s);
+        LOGGER.log(Level.INFO, "    Player {0} placed settlement at node {1}",
+                new Object[]{player.getId(), chosen.getId()});
+
+        // --- Grant starting resources on return round ---
+        if (isReturn) {
+            grantStartingResources(player, chosen);
+        }
+
+        // --- Place road (must connect to the just-placed settlement) ---
+        Edge road = pickSetupRoad(agent, player, chosen);
+        if (road != null) {
+            road.setRoad(new Road(player, road));
+            LOGGER.log(Level.INFO, "    Player {0} placed road on edge {1}",
+                    new Object[]{player.getId(), road.getId()});
+            updateLongestRoad(player);
+        } else {
+            LOGGER.log(Level.WARNING, "  Setup: Player {0} could not place a road.",
+                    player.getId());
+        }
+    }
+
+    /**
+     * Picks the node for this player's setup settlement.
+     * For AI agents: first valid node per topology.
+     * For HumanAgent: prompts the console for "build settlement N".
+     */
+    private Node pickSetupSettlement(IAgent agent, Player player) {
+        if (agent instanceof HumanAgent) {
+            return pickSetupSettlementHuman(player);
+        }
+        // AI: pick first valid node
+        for (Node n : board.getNodes()) {
+            if (board.isValidSetupSettlementPlacement(n, player)) {
+                return n;
+            }
+        }
+        return null;
+    }
+
+    private Node pickSetupSettlementHuman(Player player) {
+        LOGGER.log(Level.INFO, "[Setup] Player {0}: enter 'build settlement <nodeId>'",
+                player.getId());
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine().trim();
+            String[] parts = line.split("\\s+");
+            if (parts.length >= 3
+                    && parts[0].equalsIgnoreCase("build")
+                    && parts[1].equalsIgnoreCase("settlement")) {
+                try {
+                    int id = Integer.parseInt(parts[2]);
+                    Node n = board.getNode(id);
+                    if (n != null && board.isValidSetupSettlementPlacement(n, player)) {
+                        return n;
+                    }
+                    LOGGER.log(Level.WARNING, "  Invalid node {0}. Try again.", id);
+                } catch (NumberFormatException e) {
+                    LOGGER.info("  Please enter a valid integer node ID.");
+                }
+            } else {
+                LOGGER.info("  Expected: build settlement <nodeId>");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Picks the edge for this player's setup road, which must connect to newSettlementNode.
+     * For AI: first adjacent unoccupied edge.
+     * For HumanAgent: prompts 'build road A B'.
+     */
+    private Edge pickSetupRoad(IAgent agent, Player player, Node settlementNode) {
+        if (agent instanceof HumanAgent) {
+            return pickSetupRoadHuman(player, settlementNode);
+        }
+        // AI: pick first adjacent unoccupied edge
+        for (Edge e : board.getAdjacentEdges(settlementNode)) {
+            if (e.getRoad() == null) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private Edge pickSetupRoadHuman(Player player, Node settlementNode) {
+        LOGGER.log(Level.INFO,
+                "[Setup] Player {0}: enter 'build road <a> <b>' connecting to node {1}",
+                new Object[]{player.getId(), settlementNode.getId()});
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine().trim();
+            String[] parts = line.split("\\s+");
+            if (parts.length >= 4
+                    && parts[0].equalsIgnoreCase("build")
+                    && parts[1].equalsIgnoreCase("road")) {
+                try {
+                    int a = Integer.parseInt(parts[2]);
+                    int b = Integer.parseInt(parts[3]);
+                    Edge e = findEdge(a, b);
+                    if (e != null && e.getRoad() == null
+                            && (e.getNodes().get(0).getId() == settlementNode.getId()
+                             || e.getNodes().get(1).getId() == settlementNode.getId())) {
+                        return e;
+                    }
+                    LOGGER.log(Level.WARNING,
+                            "  Edge {0}-{1} invalid or not adjacent to your settlement. Try again.",
+                            new Object[]{a, b});
+                } catch (NumberFormatException ex) {
+                    LOGGER.info("  Please enter valid integer node IDs.");
+                }
+            } else {
+                LOGGER.info("  Expected: build road <a> <b>");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Grants 1 resource from each adjacent non-desert tile to the player.
+     * Called only on the second (return-round) settlement during setup.
+     */
+    private void grantStartingResources(Player player, Node node) {
+        for (Tile tile : board.getTiles()) {
+            if (tile.getResourceType() == ResourceType.WOOL
+                    && tile.getNumber() == 0) continue; // Skip if desert (number 0)
+            // Skip any tile whose number is 0 (desert)
+            if (tile.getNumber() == 0) continue;
+            for (Node tileNode : tile.getNodes()) {
+                if (tileNode.getId() == node.getId()) {
+                    // This tile is adjacent to the settlement
+                    if (resourceBank.hasResource(tile.getResourceType(), 1)) {
+                        resourceBank.takeResource(tile.getResourceType(), 1);
+                        player.getResourceHand().add(tile.getResourceType(), 1);
+                        LOGGER.log(Level.INFO,
+                                "    Starting resource: Player {0} gets 1 {1} from tile {2}",
+                                new Object[]{player.getId(), tile.getResourceType(), tile.getId()});
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -126,7 +374,7 @@ public class Game {
     private void processPlayerTurn(IAgent agent, Player player) {
         TurnState turnState = new TurnState();
         while (!turnState.isOver()) {
-            Action action = agent.takeTurn(round, board, resourceBank);
+            Action action = agent.takeTurn(this);
             if (action == null) {
                 turnState.setOver(true);
                 continue;
@@ -202,9 +450,71 @@ public class Game {
     private void handleBuildAndApplyAction(Action action, Player player, TurnState turnState) {
         LOGGER.log(Level.INFO, "  {0}", action);
         if (turnState.hasRolled()) {
+            // Final legality guard: reject illegal AI actions before they are applied or exported.
+            if (!isLegalAction(action, player)) {
+                LOGGER.log(Level.WARNING,
+                        "  [LEGALITY GUARD] AI action rejected as illegal (not applied, not exported): {0}",
+                        action);
+                turnState.setOver(true); // treat as implicit PASS
+                return;
+            }
             applyAction(action, player);
         } else {
             LOGGER.log(Level.INFO, "  You must roll first!");
+        }
+    }
+
+    /**
+     * Pre-validates an action without applying it.
+     * During normal play (after setup) also checks that the player can afford the build.
+     * Used as a defensive legality guard so illegal AI proposals never reach
+     * applyAction() or the state exporter.
+     */
+    private boolean isLegalAction(Action action, Player player) {
+        if (action == null || action.getActionType() == null) return false;
+        switch (action.getActionType()) {
+            case BUILD_SETTLEMENT: {
+                // After setup, require resources
+                if (setupComplete && !player.getResourceHand().canAfford(SETTLEMENT_COST)) return false;
+                String[] parts = action.getDescription().split(" ");
+                if (parts.length < 2) return false;
+                try {
+                    int nodeId = Integer.parseInt(parts[1]);
+                    Node n = board.getNode(nodeId);
+                    return n != null && board.isValidSettlementPlacement(n, player);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+            case BUILD_CITY: {
+                // Cities are always post-setup; require resources + existing settlement
+                if (!player.getResourceHand().canAfford(CITY_COST)) return false;
+                String[] parts = action.getDescription().split(" ");
+                if (parts.length < 2) return false;
+                try {
+                    int nodeId = Integer.parseInt(parts[1]);
+                    Node n = board.getNode(nodeId);
+                    return n != null && board.isValidCityPlacement(n, player);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+            case BUILD_ROAD: {
+                // After setup, require resources
+                if (setupComplete && !player.getResourceHand().canAfford(ROAD_COST)) return false;
+                String[] parts = action.getDescription().split(" ");
+                if (parts.length < 3) return false;
+                try {
+                    int fromId = Integer.parseInt(parts[1]);
+                    int toId   = Integer.parseInt(parts[2]);
+                    Edge e = findEdge(fromId, toId);
+                    return e != null && e.getRoad() == null && board.isValidRoadPlacement(e, player);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+            default:
+                return true; // ROLL, PASS, LIST, UNDO, REDO always allowed at this point
         }
     }
 
@@ -374,15 +684,35 @@ public class Game {
                     }
                 }
             }
-
             if (targetEdge != null) {
                 final Edge finalEdge = targetEdge;
                 GameCommand cmd = new BuildRoadCommand(player, finalEdge, resourceBank);
                 commandManager.executeCommand(cmd);
                 LOGGER.info(() -> String.format("    Successfully built Road on edge %d", finalEdge.getId()));
+                updateLongestRoad(player);
             }
         } catch (NumberFormatException e) {
-            LOGGER.log(Level.SEVERE, "Failed to parse node IDs for road", e);
+            LOGGER.log(Level.SEVERE, "Failed to parse edge/node IDs for road", e);
+        }
+    }
+
+    /**
+     * Re-evaluates the Longest Road for the given player.
+     * Transfers the (+2 VP) bonus if their new simple path length strictly exceeds the current record.
+     */
+    public void updateLongestRoad(Player player) {
+        int length = board.getLongestRoadLength(player);
+        if (length > longestRoadLength) {
+            if (longestRoadHolder != null && longestRoadHolder.getId() != player.getId()) {
+                longestRoadHolder.addVictoryPoints(-2);
+                LOGGER.log(Level.INFO, "Player {0} lost Longest Road (-2 VP)", longestRoadHolder.getId());
+            }
+            if (longestRoadHolder == null || longestRoadHolder.getId() != player.getId()) {
+                player.addVictoryPoints(2);
+                longestRoadHolder = player;
+                LOGGER.log(Level.INFO, "Player {0} gained Longest Road (+2 VP) with length {1}", new Object[]{player.getId(), length});
+            }
+            longestRoadLength = length;
         }
     }
 

@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,14 +20,7 @@ public class GameStateExporter {
     private static final String DEFAULT_BASE_MAP_PATH = "../2aa4-2026-base/assignments/visualize/base_map.json";
     private static final String DEFAULT_STATE_PATH = "../2aa4-2026-base/assignments/visualize/state.json";
 
-    private static final int[] NODE_TRANSLATION = {
-        1, 2, 3, 4, 5, 0, 6, 7, 8, 9, 
-        10, 11, 12, 14, 15, 13, 17, 18, 16, 20, 
-        21, 19, 22, 23, 24, 25, 26, 27, 28, 29, 
-        30, 31, 32, 33, 34, 36, 37, 35, 39, 38, 
-        41, 42, 40, 44, 43, 45, 47, 46, 48, 49, 
-        50, 51, 52, 53
-    };
+
 
     private String baseMapPath;
     private String statePath;
@@ -142,7 +137,7 @@ public class GameStateExporter {
 
                 String typeStr = (s instanceof City) ? "CITY" : "SETTLEMENT";
                 sb.append(JSON_START_BRACE)
-                        .append("\"node\": ").append(NODE_TRANSLATION[s.getLocation().getId()]).append(", ")
+                        .append("\"node\": ").append(s.getLocation().getId()).append(", ")
                         .append("\"owner\": \"").append(color).append("\", ")
                         .append("\"type\": \"").append(typeStr).append("\"")
                         .append("}");
@@ -154,14 +149,15 @@ public class GameStateExporter {
 
     private void writeRoadsJson(StringBuilder sb, List<Edge> edges) {
         sb.append("  \"roads\": [\n");
-        boolean firstRoad = true;
+        boolean firstRoadOutput = true;
+        Set<String> exportedEdges = new HashSet<>();
 
         int[][] canonicalEdges = {
-                { 0, 1 }, { 0, 5 }, { 0, 17 }, { 1, 2 }, { 1, 21 }, { 2, 3 }, { 2, 6 }, { 3, 4 }, { 3, 9 },
-                { 4, 5 }, { 4, 12 }, { 5, 13 }, { 6, 7 }, { 6, 23 }, { 7, 8 }, { 7, 24 }, { 8, 9 }, { 8, 27 },
-                { 9, 10 }, { 10, 11 }, { 10, 29 }, { 11, 12 }, { 11, 32 }, { 12, 14 }, { 13, 15 }, { 13, 18 },
-                { 14, 15 }, { 14, 34 }, { 15, 35 }, { 16, 17 }, { 16, 18 }, { 16, 41 }, { 17, 19 }, { 18, 38 },
-                { 19, 20 }, { 19, 44 }, { 20, 21 }, { 20, 47 }, { 21, 22 }, { 22, 23 }, { 22, 49 }, { 23, 52 },
+                { 0, 1 }, { 0, 5 }, { 0, 20 }, { 1, 2 }, { 1, 6 }, { 2, 3 }, { 2, 9 }, { 3, 4 }, { 3, 12 },
+                { 4, 5 }, { 4, 15 }, { 5, 16 }, { 6, 7 }, { 6, 23 }, { 7, 8 }, { 7, 24 }, { 8, 9 }, { 8, 27 },
+                { 9, 10 }, { 10, 11 }, { 10, 29 }, { 11, 12 }, { 11, 32 }, { 12, 13 }, { 13, 14 }, { 13, 34 },
+                { 14, 15 }, { 14, 37 }, { 15, 17 }, { 16, 5 }, { 16, 18 }, { 16, 21 }, { 17, 39 }, { 17, 18 }, { 18, 40 },
+                { 19, 20 }, { 19, 46 }, { 19, 21 }, { 20, 0 }, { 20, 22 }, { 21, 43 }, { 22, 23 }, { 22, 49 }, { 23, 52 },
                 { 24, 25 }, { 24, 53 }, { 25, 26 }, { 26, 27 }, { 27, 28 }, { 28, 29 }, { 29, 30 }, { 30, 31 },
                 { 31, 32 }, { 32, 33 }, { 33, 34 }, { 34, 36 }, { 35, 37 }, { 35, 39 }, { 36, 37 }, { 38, 39 },
                 { 38, 42 }, { 40, 41 }, { 40, 42 }, { 41, 43 }, { 43, 44 }, { 44, 45 }, { 45, 46 }, { 46, 47 },
@@ -178,7 +174,9 @@ public class GameStateExporter {
 
                 boolean isValidCanonicalEdge = false;
                 for (int[] canonical : canonicalEdges) {
-                    if (canonical[0] == minNode && canonical[1] == maxNode) {
+                    int cMin = Math.min(canonical[0], canonical[1]);
+                    int cMax = Math.max(canonical[0], canonical[1]);
+                    if (cMin == minNode && cMax == maxNode) {
                         isValidCanonicalEdge = true;
                         break;
                     }
@@ -190,17 +188,26 @@ public class GameStateExporter {
                     continue;
                 }
 
-                if (!firstRoad)
+                int outA = Math.min(nodeA, nodeB);
+                int outB = Math.max(nodeA, nodeB);
+                String exportKey = outA + "_" + outB;
+
+                if (exportedEdges.contains(exportKey)) {
+                    continue; // Deduplicate
+                }
+                exportedEdges.add(exportKey);
+
+                if (!firstRoadOutput)
                     sb.append(",\n");
 
                 String color = mapPlayerToColor(e.getRoad().getOwner().getId());
 
                 sb.append(JSON_START_BRACE)
-                        .append("\"a\": ").append(nodeA).append(", ")
-                        .append("\"b\": ").append(nodeB).append(", ")
+                        .append("\"a\": ").append(outA).append(", ")
+                        .append("\"b\": ").append(outB).append(", ")
                         .append("\"owner\": \"").append(color).append("\"")
                         .append("}");
-                firstRoad = false;
+                firstRoadOutput = false;
             }
         }
         sb.append("\n  ]\n");

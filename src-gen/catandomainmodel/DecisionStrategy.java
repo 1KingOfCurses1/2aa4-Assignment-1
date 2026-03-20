@@ -8,11 +8,9 @@ public interface DecisionStrategy {
     /**
      * Chooses the best action for the given player.
      * 
-     * @param player       the player making the decision
-     * @param board        the current game board
-     * @param resourceBank the shared resource bank
-     * @param round        the current round number
+     * @param game   the current game instance
+     * @param player the player making the decision
      * @return the chosen Action, or null if no action is possible/chosen
      */
-    Action chooseAction(Player player, Board board, ResourceBank resourceBank, int round);
+    Action chooseAction(Game game, Player player);
 }
