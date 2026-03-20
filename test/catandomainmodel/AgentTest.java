@@ -9,7 +9,6 @@ class AgentTest {
 
     private Agent agent;
     private Player player;
-    private Game game;
 
     @BeforeEach
     void setUp() {
@@ -21,8 +20,6 @@ class AgentTest {
         Demonstrator.mapNodesToTiles(tiles, nodes);
         List<Edge> edges = Demonstrator.createEdges(nodes);
         Board board = new Board(tiles, nodes, edges);
-
-        game = new Game(board, List.of(player), List.of(agent));
     }
 
     @Test

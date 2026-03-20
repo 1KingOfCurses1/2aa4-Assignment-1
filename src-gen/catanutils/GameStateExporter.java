@@ -1,5 +1,6 @@
-package catandomainmodel;
+package catanutils;
 
+import catandomainmodel.*;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;

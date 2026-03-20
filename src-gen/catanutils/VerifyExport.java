@@ -1,5 +1,6 @@
-package catandomainmodel;
+package catanutils;
 
+import catandomainmodel.*;
 import java.util.List;
 
 public class VerifyExport {
@@ -11,16 +12,16 @@ public class VerifyExport {
         Board board = new Board(tiles, nodes, edges);
         Player p4 = new Player(4); // White
         Game game = new Game(board, List.of(new Player(1), new Player(2), new Player(3), p4), List.of());
-        
+
         // Build at various nodes to see where they land in JSON
-        int[] testNodes = {13, 14, 15, 0, 5};
+        int[] testNodes = { 13, 14, 15, 0, 5 };
         for (int id : testNodes) {
-             Node n = board.getNode(id);
-             if (n != null) {
-                 new BuildSettlementCommand(p4, n, game.getResourceBank()).execute();
-             }
+            Node n = board.getNode(id);
+            if (n != null) {
+                new BuildSettlementCommand(p4, n, game.getResourceBank()).execute();
+            }
         }
-        
+
         // Force road 14-15 if we can find it
         for (Edge e : board.getEdges()) {
             List<Node> eNodes = e.getNodes();

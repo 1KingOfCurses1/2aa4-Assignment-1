@@ -1,4 +1,4 @@
-package catandomainmodel;
+package catanutils;
 
 import org.junit.jupiter.api.Test;
 
