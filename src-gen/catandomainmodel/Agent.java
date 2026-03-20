@@ -5,7 +5,6 @@
 package catandomainmodel;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -18,12 +17,25 @@ public class Agent implements IAgent {
 
     private Player player;
     private Random random;
+    private DecisionStrategy strategy;
     private int currentRound = -1;
     private boolean hasRolledThisTurn = false;
 
     public Agent(Player player) {
         this.player = player;
         this.random = new SecureRandom();
+        // Default strategy
+        this.strategy = new RandomDecisionStrategy();
+    }
+
+    public Agent(Player player, DecisionStrategy strategy) {
+        this.player = player;
+        this.random = new SecureRandom();
+        this.strategy = strategy;
+    }
+
+    public void setStrategy(DecisionStrategy strategy) {
+        this.strategy = strategy;
     }
 
     public Player getPlayer() {
@@ -49,33 +61,23 @@ public class Agent implements IAgent {
     }
 
     /**
-     * Turn automaton: roll → resolve → choose action.
-     * Builds a list of available actions based on state, then picks randomly.
+     * Turn automaton: roll → resolve → choose action via strategy.
      */
     @Override
-    public Action takeTurn(int roundNumber, Board board, ResourceBank resourceBank) {
-        if (currentRound != roundNumber) {
-            currentRound = roundNumber;
+    public Action takeTurn(Game game) {
+        if (currentRound != game.getRound()) {
+            currentRound = game.getRound();
             hasRolledThisTurn = false;
         }
 
         if (!hasRolledThisTurn) {
             hasRolledThisTurn = true;
-            return new Action(roundNumber, player.getId(), "ROLL", ActionType.ROLL);
+            return new Action(currentRound, player.getId(), "ROLL", ActionType.ROLL);
         }
 
-        // Build available actions
-        List<Action> actions = new ArrayList<>();
-        actions.add(new Action(roundNumber, player.getId(), "BUILD_SETTLEMENT", ActionType.BUILD_SETTLEMENT));
-        actions.add(new Action(roundNumber, player.getId(), "BUILD_ROAD", ActionType.BUILD_ROAD));
-        actions.add(new Action(roundNumber, player.getId(), "PASS", ActionType.PASS));
-
-        // BUILD_CITY is only available if the player has at least one structure
-        if (!player.getStructures().isEmpty()) {
-            actions.add(new Action(roundNumber, player.getId(), "BUILD_CITY", ActionType.BUILD_CITY));
-        }
-
-        Action chosen = chooseRandomAction(actions);
+        // Delegate decision making to the strategy
+        Action chosen = strategy.chooseAction(game, player);
+        
         if (chosen != null && chosen.getActionType() == ActionType.PASS) {
             hasRolledThisTurn = false;
         }

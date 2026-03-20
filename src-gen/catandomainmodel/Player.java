@@ -33,6 +33,10 @@ public class Player {
         return victoryPoints;
     }
 
+    public void addVictoryPoints(int vp) {
+        this.victoryPoints += vp;
+    }
+
     public ResourceHand getResourceHand() {
         return resourceHand;
     }

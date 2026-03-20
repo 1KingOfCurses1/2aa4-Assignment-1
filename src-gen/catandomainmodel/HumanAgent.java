@@ -49,7 +49,8 @@ public class HumanAgent implements IAgent {
      * 3. Return the resulting Action
      */
     @Override
-    public Action takeTurn(int roundNumber, Board board, ResourceBank resourceBank) {
+    public Action takeTurn(Game game) {
+        int roundNumber = game.getRound();
         LOGGER.log(Level.INFO, "\n=== Player {0}''s turn (Round {1}) ===",
                 new Object[] { player.getId(), roundNumber });
         LOGGER.log(Level.INFO, "Your resources: {0} (Total VP: {1})", 

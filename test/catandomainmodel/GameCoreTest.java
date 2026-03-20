@@ -212,7 +212,7 @@ class GameCoreTest {
     @Test
     void testHumanAgentTurnProcessing() {
         HumanAgent ha = new HumanAgent(players.get(0), new Scanner("roll\ngo\n"));
-        Action a = ha.takeTurn(1, board, game.getResourceBank());
+        Action a = ha.takeTurn(game);
         assertEquals(ActionType.ROLL, a.getActionType());
     }
 
@@ -240,4 +240,294 @@ class GameCoreTest {
         game.printRoundSummary();
         assertNotNull(new Demonstrator());
     }
+
+    // =====================================================================
+    // Setup phase and resource enforcement tests (correct 8-step snake order)
+    // =====================================================================
+
+    // 17. After runSetupPhase, each player has exactly 2 settlements (snake order)
+    @Test
+    void testSetupPhaseGrantsExactlyTwoSettlementsPerPlayer() {
+        try {
+            java.lang.reflect.Method setup = Game.class.getDeclaredMethod("runSetupPhase");
+            setup.setAccessible(true);
+            setup.invoke(game);
+        } catch (Exception e) {
+            fail("Could not invoke runSetupPhase: " + e.getMessage());
+        }
+
+        for (Player p : players) {
+            long settlements = p.getStructures().stream()
+                    .filter(s -> s instanceof Settlement).count();
+            assertEquals(2, settlements,
+                    "Player " + p.getId() + " should have exactly 2 settlements after setup");
+        }
+    }
+
+    // 18. After runSetupPhase, each player has exactly 2 roads
+    @Test
+    void testSetupPhaseGrantsExactlyTwoRoadsPerPlayer() {
+        try {
+            java.lang.reflect.Method setup = Game.class.getDeclaredMethod("runSetupPhase");
+            setup.setAccessible(true);
+            setup.invoke(game);
+        } catch (Exception e) {
+            fail("Could not invoke runSetupPhase: " + e.getMessage());
+        }
+
+        // Count roads per player via the board edges
+        for (Player p : players) {
+            long roads = board.getEdges().stream()
+                    .filter(e -> e.getRoad() != null && e.getRoad().getOwner().getId() == p.getId())
+                    .count();
+            assertEquals(2, roads,
+                    "Player " + p.getId() + " should have exactly 2 roads after setup");
+        }
+    }
+
+    // 19. Second settlement (return round) grants starting resources
+    @Test
+    void testSecondSettlementGrantsStartingResources() throws Exception {
+        // Run full setup so return-round resources are granted
+        java.lang.reflect.Method setup = Game.class.getDeclaredMethod("runSetupPhase");
+        setup.setAccessible(true);
+        setup.invoke(game);
+
+        // At least one player should have received starting resources from their second settlement.
+        // (They may have gotten 0 if their second settlement lands on desert-only neighbours,
+        //  but on the standard 19-tile board this is virtually impossible for all 4 players.)
+        int totalCards = 0;
+        for (Player p : players) {
+            totalCards += p.getResourceHand().getTotalCards();
+        }
+        assertTrue(totalCards > 0,
+                "At least some starting resources should have been granted after setup");
+    }
+
+    // 20. No cities should exist after setup (cities are post-game builds only)
+    @Test
+    void testNoCitiesAfterSetup() throws Exception {
+        java.lang.reflect.Method setup = Game.class.getDeclaredMethod("runSetupPhase");
+        setup.setAccessible(true);
+        setup.invoke(game);
+
+        for (Player p : players) {
+            for (Structure s : p.getStructures()) {
+                assertFalse(s instanceof City,
+                        "No cities should exist directly after setup – got one for player " + p.getId());
+            }
+        }
+    }
+
+    // 21. Road requires resources after setup
+    @Test
+    void testRoadRequiresResourcesAfterSetup() throws Exception {
+        java.lang.reflect.Method isLegal = Game.class.getDeclaredMethod("isLegalAction", Action.class, Player.class);
+        isLegal.setAccessible(true);
+
+        java.lang.reflect.Field f = Game.class.getDeclaredField("setupComplete");
+        f.setAccessible(true);
+        f.set(game, true);
+
+        Player p1 = players.get(0);
+        Node n0 = board.getNode(0);
+        p1.addStructure(new Settlement(p1, n0));
+
+        // No resources → road at 0-1 must be rejected
+        Action roadNoRes = new Action(1, 1, "BUILD_ROAD 0 1", ActionType.BUILD_ROAD);
+        boolean result = (boolean) isLegal.invoke(game, roadNoRes, p1);
+        assertFalse(result, "Road must be illegal when player cannot afford it");
+    }
+
+    // 22. Settlement requires resources after setup
+    @Test
+    void testSettlementRequiresResourcesAfterSetup() throws Exception {
+        java.lang.reflect.Method isLegal = Game.class.getDeclaredMethod("isLegalAction", Action.class, Player.class);
+        isLegal.setAccessible(true);
+
+        java.lang.reflect.Field f = Game.class.getDeclaredField("setupComplete");
+        f.setAccessible(true);
+        f.set(game, true);
+
+        Player p1 = players.get(0);
+        // No resources → settlement must be rejected
+        Action buildNoRes = new Action(1, 1, "BUILD_SETTLEMENT 0", ActionType.BUILD_SETTLEMENT);
+        boolean result = (boolean) isLegal.invoke(game, buildNoRes, p1);
+        assertFalse(result, "Settlement must be illegal when player cannot afford it");
+    }
+
+    // 23. City requires resources and an existing owned settlement
+    @Test
+    void testCityRequiresResourcesAndOwnedSettlement() throws Exception {
+        java.lang.reflect.Method isLegal = Game.class.getDeclaredMethod("isLegalAction", Action.class, Player.class);
+        isLegal.setAccessible(true);
+
+        Player p1 = players.get(0);
+        Node n0 = board.getNode(0);
+
+        // No settlement and no resources → city must be rejected
+        Action cityNoRes = new Action(1, 1, "BUILD_CITY 0", ActionType.BUILD_CITY);
+        assertFalse((boolean) isLegal.invoke(game, cityNoRes, p1),
+                "City must be illegal when player cannot afford it");
+
+        // Add resources but still no settlement → must be rejected
+        p1.getResourceHand().add(ResourceType.ORE, 3);
+        p1.getResourceHand().add(ResourceType.GRAIN, 2);
+        assertFalse((boolean) isLegal.invoke(game, cityNoRes, p1),
+                "City requires an existing owned settlement on that node");
+
+        // Add settlement → now legal
+        p1.addStructure(new Settlement(p1, n0));
+        assertTrue((boolean) isLegal.invoke(game, cityNoRes, p1),
+                "City with resources + owned settlement should be legal");
+    }
+
+    // 24. Setup settlement can be placed on any legal empty node (no road connection needed)
+    @Test
+    void testSetupSettlementRequiresNoRoad() {
+        Player p1 = players.get(0);
+        Node n0 = board.getNode(0);
+        Node n10 = board.getNode(10); // Far away node
+
+        // Place first settlement at n0
+        p1.addStructure(new Settlement(p1, n0));
+
+        // Test if second setup settlement can be placed at n10 (no road connection)
+        assertTrue(board.isValidSetupSettlementPlacement(n10, p1),
+                "Second setup settlement should not require a road connection");
+    }
+
+    // 25. Normal settlement requires a connecting road if player has structures
+    @Test
+    void testNormalSettlementRequiresRoad() {
+        Player p1 = players.get(0);
+        Node n0 = board.getNode(0);
+        Node n10 = board.getNode(10); // Far away node
+
+        // Place first structure at n0
+        p1.addStructure(new Settlement(p1, n0));
+
+        // In normal play, n10 should be REJECTED because there is no connecting road
+        assertFalse(board.isValidSettlementPlacement(n10, p1),
+                "Normal settlement placement MUST require a connecting road");
+
+        // Now add a road connecting to n10 (assume edge 10-11 exists)
+        Edge roadEdge = board.getAdjacentEdges(n10).get(0);
+        roadEdge.setRoad(new Road(p1, roadEdge));
+
+        // Now n10 should be VALID for normal play
+        assertTrue(board.isValidSettlementPlacement(n10, p1),
+                "Normal settlement placement should be valid when a connecting road exists");
+    }
+
+    // =====================================================================
+    // Longest Road Tests (R3.3 integration)
+    // =====================================================================
+
+    private List<Edge> findContinuousPath(Board b, int targetLength) {
+        for (Edge e : b.getEdges()) {
+            List<Edge> path = new ArrayList<>();
+            path.add(e);
+            if (dfsFindPath(b, e, path, targetLength)) {
+                return path;
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private boolean dfsFindPath(Board b, Edge current, List<Edge> path, int targetLength) {
+        if (path.size() >= targetLength) return true;
+        for (Node n : current.getNodes()) {
+            for (Edge adj : b.getAdjacentEdges(n)) {
+                if (!path.contains(adj)) {
+                    path.add(adj);
+                    if (dfsFindPath(b, adj, path, targetLength)) return true;
+                    path.remove(path.size() - 1);
+                }
+            }
+        }
+        return false;
+    }
+
+    // 26. Awarding Longest Road at 5 connected roads
+    @Test
+    void testLongestRoadAwardedAt5() {
+        Player p1 = players.get(0);
+        int initialVP = p1.getVictoryPoints();
+
+        List<Edge> path = findContinuousPath(board, 5);
+        assertTrue(path.size() >= 5, "Board must have a path of at least 5 edges");
+
+        for (int i = 0; i < 4; i++) {
+            path.get(i).setRoad(new Road(p1, path.get(i)));
+            game.updateLongestRoad(p1);
+        }
+        assertNull(game.getLongestRoadHolder(), "No one should have Longest Road at 4 roads");
+        assertEquals(initialVP, p1.getVictoryPoints(), "VP should not increase at 4 roads");
+
+        // 5th road
+        path.get(4).setRoad(new Road(p1, path.get(4)));
+        game.updateLongestRoad(p1);
+
+        assertEquals(p1, game.getLongestRoadHolder(), "Player 1 should hold Longest Road at 5");
+        assertEquals(initialVP + 2, p1.getVictoryPoints(), "Player 1 should gain 2 VP for Longest Road");
+    }
+
+    // 27. Tie does not transfer Longest Road
+    @Test
+    void testLongestRoadTieDoesNotTransfer() {
+        Player p1 = players.get(0);
+        Player p2 = players.get(1);
+
+        List<Edge> path = findContinuousPath(board, 10);
+        assertTrue(path.size() >= 10, "Board must have a path of at least 10 edges");
+
+        // P1 gets 5 roads
+        for (int i = 0; i < 5; i++) {
+            path.get(i).setRoad(new Road(p1, path.get(i)));
+            game.updateLongestRoad(p1);
+        }
+        assertEquals(p1, game.getLongestRoadHolder(), "P1 has Longest Road");
+
+        // P2 gets 5 independent roads
+        for (int i = 5; i < 10; i++) {
+            path.get(i).setRoad(new Road(p2, path.get(i)));
+            game.updateLongestRoad(p2);
+        }
+
+        assertEquals(p1, game.getLongestRoadHolder(), "P1 should KEEP Longest Road on a tie");
+        assertEquals(5, game.getLongestRoadLength(), "Length remains 5");
+    }
+
+    // 28. Exceeding transfers Longest Road & VP bonus moves correctly
+    @Test
+    void testLongestRoadExceedingTransfersAndVPMoves() {
+        Player p1 = players.get(0);
+        Player p2 = players.get(1);
+        int p1InitialVP = p1.getVictoryPoints();
+        int p2InitialVP = p2.getVictoryPoints();
+
+        List<Edge> path = findContinuousPath(board, 11);
+        assertTrue(path.size() >= 11, "Board must have a path of at least 11 edges");
+
+        // P1 gets 5 roads -> gains +2 VP
+        for (int i = 0; i < 5; i++) {
+            path.get(i).setRoad(new Road(p1, path.get(i)));
+            game.updateLongestRoad(p1);
+        }
+        assertEquals(p1, game.getLongestRoadHolder(), "P1 holds LR");
+        assertEquals(p1InitialVP + 2, p1.getVictoryPoints(), "P1 got +2 VP");
+
+        // P2 gets 6 roads -> takes LR, gains +2 VP, P1 loses 2 VP
+        for (int i = 5; i < 11; i++) {
+            path.get(i).setRoad(new Road(p2, path.get(i)));
+            game.updateLongestRoad(p2);
+        }
+
+        assertEquals(p2, game.getLongestRoadHolder(), "P2 should TAKE Longest Road with 6");
+        assertEquals(6, game.getLongestRoadLength(), "Length is now 6");
+        assertEquals(p1InitialVP, p1.getVictoryPoints(), "P1 lost the +2 VP bonus");
+        assertEquals(p2InitialVP + 2, p2.getVictoryPoints(), "P2 gained the +2 VP bonus");
+    }
 }
+
