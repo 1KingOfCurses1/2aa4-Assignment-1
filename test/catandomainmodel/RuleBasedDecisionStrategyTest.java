@@ -9,13 +9,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for RuleBasedDecisionStrategy (R3.2 / R3.3) and the Game legality guard.
+ * Tests for RuleBasedDecisionStrategy (R3.2 / R3.3) and the Game legality
+ * guard.
  *
  * Board setup used by most tests:
- *   Nodes 0-53, edges:
- *     Edge 0: 0-1
- *     Edge 1: 1-2
- *   This keeps the board minimal; additional edges/nodes are added per-test as needed.
+ * Nodes 0-53, edges:
+ * Edge 0: 0-1
+ * Edge 1: 1-2
+ * This keeps the board minimal; additional edges/nodes are added per-test as
+ * needed.
  */
 public class RuleBasedDecisionStrategyTest {
 
@@ -31,7 +33,8 @@ public class RuleBasedDecisionStrategyTest {
         tiles.add(new Tile(0, ResourceType.LUMBER, 6));
 
         List<Node> nodes = new ArrayList<>();
-        for (int i = 0; i < 54; i++) nodes.add(new Node(i));
+        for (int i = 0; i < 54; i++)
+            nodes.add(new Node(i));
 
         List<Edge> edges = new ArrayList<>();
         for (int i = 0; i < edgePairs.length; i++) {
@@ -43,7 +46,9 @@ public class RuleBasedDecisionStrategyTest {
         return new Board(tiles, nodes, edges);
     }
 
-    /** Place a settlement for a player at the given node (bypasses distance rule). */
+    /**
+     * Place a settlement for a player at the given node (bypasses distance rule).
+     */
     private void placeSettlement(Player p, Board b, int nodeId) {
         Node n = b.getNode(nodeId);
         Settlement s = new Settlement(p, n);
@@ -68,8 +73,8 @@ public class RuleBasedDecisionStrategyTest {
 
     @BeforeEach
     public void setUp() {
-        board    = buildBoard(new int[][]{{0, 1}, {1, 2}});
-        player   = new Player(1);
+        board = buildBoard(new int[][] { { 0, 1 }, { 1, 2 } });
+        player = new Player(1);
         strategy = new RuleBasedDecisionStrategy();
     }
 
@@ -89,7 +94,7 @@ public class RuleBasedDecisionStrategyTest {
 
         placeSettlement(player, board, 0);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
 
         assertNotNull(chosen);
         assertEquals(ActionType.BUILD_ROAD, chosen.getActionType(),
@@ -98,7 +103,8 @@ public class RuleBasedDecisionStrategyTest {
 
     /**
      * Settlement (1.0) must beat road (0.8 or 0.5) even when settlement
-     * leaves fewer than 5 cards — VP actions are never downgraded by the economy rule.
+     * leaves fewer than 5 cards — VP actions are never downgraded by the economy
+     * rule.
      */
     @Test
     public void testVPNotDowngradedByEconomy() {
@@ -109,13 +115,14 @@ public class RuleBasedDecisionStrategyTest {
         player.getResourceHand().add(ResourceType.WOOL, 1);
         player.getResourceHand().add(ResourceType.GRAIN, 1);
 
-        // Node 2 is free and adjacent only via edge 1-2, so not within distance-1 of node 0
+        // Node 2 is free and adjacent only via edge 1-2, so not within distance-1 of
+        // node 0
         // We seed a road at 1-2 so player can place a settlement at node 2.
         placeSettlement(player, board, 0);
         placeRoad(player, board, 0, 1);
         placeRoad(player, board, 1, 2);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
 
         assertNotNull(chosen);
         assertEquals(ActionType.BUILD_SETTLEMENT, chosen.getActionType(),
@@ -123,7 +130,8 @@ public class RuleBasedDecisionStrategyTest {
     }
 
     /**
-     * When the player can afford both settlement and road, settlement (1.0) beats road (0.8).
+     * When the player can afford both settlement and road, settlement (1.0) beats
+     * road (0.8).
      */
     @Test
     public void testVPPreferenceOverRoad() {
@@ -138,13 +146,13 @@ public class RuleBasedDecisionStrategyTest {
         placeRoad(player, board, 0, 1);
         placeRoad(player, board, 1, 2);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
 
         assertNotNull(chosen);
         assertTrue(
-            chosen.getActionType() == ActionType.BUILD_SETTLEMENT
-         || chosen.getActionType() == ActionType.BUILD_CITY,
-            "VP action (1.0) must beat road (0.8)");
+                chosen.getActionType() == ActionType.BUILD_SETTLEMENT
+                        || chosen.getActionType() == ActionType.BUILD_CITY,
+                "VP action (1.0) must beat road (0.8)");
     }
 
     /**
@@ -161,7 +169,7 @@ public class RuleBasedDecisionStrategyTest {
 
         placeSettlement(player, board, 0);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
         assertNotNull(chosen, "Should return a valid action under economy rule");
     }
 
@@ -170,16 +178,17 @@ public class RuleBasedDecisionStrategyTest {
      */
     @Test
     public void testTieBreakingNoCrash() {
-        // Two legal road placements, both score 0.8 (abundant hand so no economy downgrade)
+        // Two legal road placements, both score 0.8 (abundant hand so no economy
+        // downgrade)
         Game game = new Game(board, List.of(player), List.of());
         player.getResourceHand().add(ResourceType.BRICK, 10);
         player.getResourceHand().add(ResourceType.LUMBER, 10);
 
         placeSettlement(player, board, 0);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
         assertNotNull(chosen, "Must return an action when there are tied candidates");
-        assertDoesNotThrow(() -> strategy.chooseAction(game, player),
+        assertDoesNotThrow(() -> strategy.chooseAction(new GameState(game, player)),
                 "Tie-breaking must not throw");
     }
 
@@ -191,7 +200,7 @@ public class RuleBasedDecisionStrategyTest {
         Game game = new Game(board, List.of(player), List.of());
         // No resources, no structures → nothing to build
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
 
         assertNotNull(chosen);
         assertEquals(ActionType.PASS, chosen.getActionType(),
@@ -203,17 +212,18 @@ public class RuleBasedDecisionStrategyTest {
     // =====================================================================
 
     /**
-     * R3.3 Priority 1: player has > 7 cards and can build → strategy must build, not pass.
+     * R3.3 Priority 1: player has > 7 cards and can build → strategy must build,
+     * not pass.
      */
     @Test
     public void testR33OverSevenCardsTriggersSpend() {
         Game game = new Game(board, List.of(player), List.of());
         player.getResourceHand().add(ResourceType.BRICK, 5);
-        player.getResourceHand().add(ResourceType.LUMBER, 5);  // 10 cards total > 7
+        player.getResourceHand().add(ResourceType.LUMBER, 5); // 10 cards total > 7
 
         placeSettlement(player, board, 0);
 
-        Action chosen = strategy.chooseAction(game, player);
+        Action chosen = strategy.chooseAction(new GameState(game, player));
 
         assertNotNull(chosen);
         assertNotEquals(ActionType.PASS, chosen.getActionType(),
@@ -227,8 +237,8 @@ public class RuleBasedDecisionStrategyTest {
     @Test
     public void testR33ConnectRoadsTriggered() {
         // Build a board with enough topology:
-        //  edges: 0-1, 1-2, 2-3, 10-11, 11-12
-        Board b = buildBoard(new int[][]{{0,1},{1,2},{2,3},{10,11},{11,12}});
+        // edges: 0-1, 1-2, 2-3, 10-11, 11-12
+        Board b = buildBoard(new int[][] { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 10, 11 }, { 11, 12 } });
         Player p = new Player(1);
         Game game = new Game(b, List.of(p), List.of());
 
@@ -245,46 +255,52 @@ public class RuleBasedDecisionStrategyTest {
         placeRoad(p, b, 10, 11);
 
         RuleBasedDecisionStrategy strat = new RuleBasedDecisionStrategy();
-        Action chosen = strat.chooseAction(game, p);
+        Action chosen = strat.chooseAction(new GameState(game, p));
 
         assertNotNull(chosen);
-        // R3.3.2 or R3.3.1 (> 7 cards) may fire, but either way should be BUILD_ROAD or a build
+        // R3.3.2 or R3.3.1 (> 7 cards) may fire, but either way should be BUILD_ROAD or
+        // a build
         assertNotEquals(ActionType.PASS, chosen.getActionType(),
                 "R3.3 Priority 2: should try to connect road segments");
     }
 
     /**
-     * R3.3 Priority 3: opponent has longest road at myLength - 1 → defensive road chosen.
+     * R3.3 Priority 3: opponent has longest road at myLength - 1 → defensive road
+     * chosen.
      */
     @Test
     public void testR33DefendLongestRoadTriggered() {
-        // Board with enough edges for both players
-        Board b = buildBoard(new int[][]{{0,1},{1,2},{2,3},{3,4},{4,5},
-                                         {10,11},{11,12},{12,13},{13,14},{14,15},{15,16}});
-        Player me    = new Player(1);
+        // Board with enough edges for both players, Plus one extra edge (5,6) for me to
+        // build on
+        Board b = buildBoard(new int[][] { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 4 }, { 4, 5 }, { 5, 6 },
+                { 10, 11 }, { 11, 12 }, { 12, 13 }, { 13, 14 }, { 14, 15 }, { 15, 16 } });
+        Player me = new Player(1);
         Player other = new Player(2);
         Game game = new Game(b, List.of(me, other), List.of());
 
         me.getResourceHand().add(ResourceType.BRICK, 5);
         me.getResourceHand().add(ResourceType.LUMBER, 5);
 
-        // My road network: length 5  (0-1, 1-2, 2-3, 3-4, 4-5)
+        // My road network: length 5 (0-1, 1-2, 2-3, 3-4, 4-5)
         placeSettlement(me, b, 0);
         placeRoad(me, b, 0, 1);
         placeRoad(me, b, 1, 2);
         placeRoad(me, b, 2, 3);
         placeRoad(me, b, 3, 4);
         placeRoad(me, b, 4, 5);
+        game.updateLongestRoad(me);
 
-        // Opponent road network: length 4  (10-11, 11-12, 12-13, 13-14) → myLength - 1 = 4
+        // Opponent road network: length 4 (10-11, 11-12, 12-13, 13-14) → myLength - 1 =
+        // 4
         placeSettlement(other, b, 10);
         placeRoad(other, b, 10, 11);
         placeRoad(other, b, 11, 12);
         placeRoad(other, b, 12, 13);
         placeRoad(other, b, 13, 14);
+        game.updateLongestRoad(other);
 
         RuleBasedDecisionStrategy strat = new RuleBasedDecisionStrategy();
-        Action chosen = strat.chooseAction(game, me);
+        Action chosen = strat.chooseAction(new GameState(game, me));
 
         assertNotNull(chosen);
         assertNotEquals(ActionType.PASS, chosen.getActionType(),
@@ -303,7 +319,7 @@ public class RuleBasedDecisionStrategyTest {
     @Test
     public void testGameLegalityGuardRejectsIllegalAction() {
         // Use a real minimal game setup
-        Board b = buildBoard(new int[][]{{0,1},{1,2}});
+        Board b = buildBoard(new int[][] { { 0, 1 }, { 1, 2 } });
         Player p = new Player(1);
         p.getResourceHand().add(ResourceType.BRICK, 3);
         p.getResourceHand().add(ResourceType.LUMBER, 3);
@@ -313,6 +329,7 @@ public class RuleBasedDecisionStrategyTest {
         // Inject an agent that always proposes an edge that does NOT exist in the board
         IAgent badAgent = new IAgent() {
             private boolean rolled = false;
+
             @Override
             public Action takeTurn(Game game) {
                 if (!rolled) {
@@ -326,10 +343,12 @@ public class RuleBasedDecisionStrategyTest {
 
         Game game = new Game(b, List.of(p), List.of(badAgent));
 
-        // Suppress the "Press go" prompt by injecting a scanner that immediately provides "go"
+        // Suppress the "Press go" prompt by injecting a scanner that immediately
+        // provides "go"
         game.setScanner(new java.util.Scanner("go\ngo\ngo\ngo\n"));
 
-        // playRound will try the bad road action; the legality guard should silently reject it
+        // playRound will try the bad road action; the legality guard should silently
+        // reject it
         assertDoesNotThrow(game::playRound, "Game must not crash on illegal AI action");
 
         // Board must be unmodified: no road placed

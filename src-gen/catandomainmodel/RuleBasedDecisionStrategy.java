@@ -36,15 +36,16 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
     }
 
     @Override
-    public Action chooseAction(Game game, Player player) {
-        Board board = game.getBoard();
-        int round = game.getRound();
+    public Action chooseAction(GameState state) {
+        Board board = state.getBoard();
+        Player player = state.getCurrentAgentPlayer();
+        int round = state.getRound();
 
-        LOGGER.log(Level.INFO, "--- Player {0} Decision (Round {1}) ---", new Object[]{player.getId(), round});
+        LOGGER.log(Level.INFO, "--- Player {0} Decision (Round {1}) ---", new Object[] { player.getId(), round });
         LOGGER.log(Level.INFO, "    Resources: {0}", player.getResourceHand().toString());
 
         // R3.3 Priorities (Priority Checks before scoring)
-        Action priorityAction = checkPriorityConstraints(game, player);
+        Action priorityAction = checkPriorityConstraints(state);
         if (priorityAction != null) {
             LOGGER.log(Level.INFO, "    R3.3 Priority Constraint Triggered: {0}", priorityAction.getActionType());
             LOGGER.log(Level.INFO, "    Chosen Action: {0}", priorityAction);
@@ -55,18 +56,18 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
         ResourceHand hand = player.getResourceHand();
 
         // Gather all legal actions and score them per R3.2:
-        //   VP gain (settlement/city) = 1.0  -- always, never downgraded
-        //   Non-VP build (road)        = 0.8  -- or 0.5 if hand drops below 5
-        //   Economy spend              = 0.5  -- road that leaves < 5 cards in hand
+        // VP gain (settlement/city) = 1.0 -- always, never downgraded
+        // Non-VP build (road) = 0.8 -- or 0.5 if hand drops below 5
+        // Economy spend = 0.5 -- road that leaves < 5 cards in hand
 
         // 1. Settlements (VP Gain = 1.0, never downgraded)
         if (hand.canAfford(SETTLEMENT_COST)) {
             for (Node n : board.getNodes()) {
                 if (board.isValidSettlementPlacement(n, player)) {
                     candidates.add(new ScoredAction(
-                        new Action(round, player.getId(), "BUILD_SETTLEMENT " + n.getId(), ActionType.BUILD_SETTLEMENT),
-                        1.0
-                    ));
+                            new Action(round, player.getId(), "BUILD_SETTLEMENT " + n.getId(),
+                                    ActionType.BUILD_SETTLEMENT),
+                            1.0));
                 }
             }
         }
@@ -76,22 +77,23 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
             for (Node n : board.getNodes()) {
                 if (board.isValidCityPlacement(n, player)) {
                     candidates.add(new ScoredAction(
-                        new Action(round, player.getId(), "BUILD_CITY " + n.getId(), ActionType.BUILD_CITY),
-                        1.0
-                    ));
+                            new Action(round, player.getId(), "BUILD_CITY " + n.getId(), ActionType.BUILD_CITY),
+                            1.0));
                 }
             }
         }
 
-        // 3. Roads: start at 0.8; downgrade to 0.5 if building it leaves fewer than 5 cards.
-        //    Economy rule (R3.2) only applies here — roads do not earn VP.
+        // 3. Roads: start at 0.8; downgrade to 0.5 if building it leaves fewer than 5
+        // cards.
+        // Economy rule (R3.2) only applies here — roads do not earn VP.
         if (hand.canAfford(ROAD_COST)) {
             for (Edge e : board.getEdges()) {
                 if (board.isValidRoadPlacement(e, player)) {
                     if (e.getNodes().size() == 2) {
                         int n1 = e.getNodes().get(0).getId();
                         int n2 = e.getNodes().get(1).getId();
-                        Action roadAction = new Action(round, player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD);
+                        Action roadAction = new Action(round, player.getId(), "BUILD_ROAD " + n1 + " " + n2,
+                                ActionType.BUILD_ROAD);
                         double roadScore = leavesFewerThanFiveCards(player, roadAction) ? 0.5 : 0.8;
                         candidates.add(new ScoredAction(roadAction, roadScore));
                     }
@@ -108,7 +110,7 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
 
         LOGGER.info("    Candidate Actions:");
         for (ScoredAction sa : candidates) {
-            LOGGER.log(Level.INFO, "      - {0} | Score: {1}", new Object[]{sa.action, sa.score});
+            LOGGER.log(Level.INFO, "      - {0} | Score: {1}", new Object[] { sa.action, sa.score });
         }
 
         // Choose best
@@ -132,38 +134,45 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
         return finalAction;
     }
 
-    private Action checkPriorityConstraints(Game game, Player player) {
+    private Action checkPriorityConstraints(GameState state) {
         // R3.3 Priorities
-        
+
+        Player player = state.getCurrentAgentPlayer();
+
         // 1. More than 7 cards -> must spend
         if (player.getResourceHand().getTotalCards() > 7) {
             // Find any build action to lower card count
-            Action a = findAnyBuildAction(game, player);
-            if (a != null) return a;
+            Action a = findAnyBuildAction(state);
+            if (a != null)
+                return a;
         }
-        
+
         // 2. Road segments within two units -> try to connect
-        Action roadConn = findConnectingRoadAction(game, player);
-        if (roadConn != null) return roadConn;
-        
+        Action roadConn = findConnectingRoadAction(state);
+        if (roadConn != null)
+            return roadConn;
+
         // 3. Longest road threatened -> buy connected road
-        Action defensiveRoad = findDefensiveRoadAction(game, player);
-        if (defensiveRoad != null) return defensiveRoad;
+        Action defensiveRoad = findDefensiveRoadAction(state);
+        if (defensiveRoad != null)
+            return defensiveRoad;
 
         return null; // No priority constraint triggered
     }
 
-    private Action findAnyBuildAction(Game game, Player player) {
+    private Action findAnyBuildAction(GameState state) {
         // Simplified: just return the first legal build action found
         // This is triggered if player has > 7 cards.
-        Board board = game.getBoard();
+        Board board = state.getBoard();
+        Player player = state.getCurrentAgentPlayer();
         ResourceHand hand = player.getResourceHand();
-        int round = game.getRound();
+        int round = state.getRound();
 
         if (hand.canAfford(SETTLEMENT_COST)) {
             for (Node n : board.getNodes()) {
                 if (board.isValidSettlementPlacement(n, player)) {
-                    return new Action(round, player.getId(), "BUILD_SETTLEMENT " + n.getId(), ActionType.BUILD_SETTLEMENT);
+                    return new Action(round, player.getId(), "BUILD_SETTLEMENT " + n.getId(),
+                            ActionType.BUILD_SETTLEMENT);
                 }
             }
         }
@@ -186,32 +195,36 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
         return null;
     }
 
-    private Action findConnectingRoadAction(Game game, Player player) {
+    private Action findConnectingRoadAction(GameState state) {
         // R3.3.2: Connect segments within two units
-        Board board = game.getBoard();
+        Board board = state.getBoard();
+        Player player = state.getCurrentAgentPlayer();
         Edge candidate = board.getConnectingRoadCandidate(player);
         if (candidate != null && player.getResourceHand().canAfford(ROAD_COST)) {
             int n1 = candidate.getNodes().get(0).getId();
             int n2 = candidate.getNodes().get(1).getId();
-            return new Action(game.getRound(), player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD);
+            return new Action(state.getRound(), player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD);
         }
-        return null; 
+        return null;
     }
 
-    private Action findDefensiveRoadAction(Game game, Player player) {
+    private Action findDefensiveRoadAction(GameState state) {
         // R3.3.3: Defence of Longest Road
-        Player holder = game.getLongestRoadHolder();
+        Player player = state.getCurrentAgentPlayer();
+        Player holder = state.getLongestRoadHolder();
         // If we do not currently hold the Longest Road, we cannot defend it here
-        if (holder == null || holder.getId() != player.getId()) return null;
+        if (holder == null || holder.getId() != player.getId())
+            return null;
 
-        Board board = game.getBoard();
+        Board board = state.getBoard();
         int myLength = board.getLongestRoadLength(player);
-        
+
         boolean isThreatened = false;
-        for (Player other : game.getPlayers()) {
-            if (other.getId() == player.getId()) continue;
+        for (Player other : state.getPlayers()) {
+            if (other.getId() == player.getId())
+                continue;
             int otherLength = board.getLongestRoadLength(other);
-            
+
             // If another player is within 1 road of exceeding our length
             if (otherLength >= myLength - 1) {
                 isThreatened = true;
@@ -225,7 +238,8 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
                 if (board.isValidRoadPlacement(e, player) && player.getResourceHand().canAfford(ROAD_COST)) {
                     int n1 = e.getNodes().get(0).getId();
                     int n2 = e.getNodes().get(1).getId();
-                    return new Action(game.getRound(), player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD);
+                    return new Action(state.getRound(), player.getId(), "BUILD_ROAD " + n1 + " " + n2,
+                            ActionType.BUILD_ROAD);
                 }
             }
         }
@@ -235,10 +249,17 @@ public class RuleBasedDecisionStrategy implements DecisionStrategy {
     private boolean leavesFewerThanFiveCards(Player player, Action action) {
         int cost = 0;
         switch (action.getActionType()) {
-            case BUILD_SETTLEMENT: cost = 4; break;
-            case BUILD_CITY:       cost = 5; break;
-            case BUILD_ROAD:       cost = 2; break;
-            default:               break;
+            case BUILD_SETTLEMENT:
+                cost = 4;
+                break;
+            case BUILD_CITY:
+                cost = 5;
+                break;
+            case BUILD_ROAD:
+                cost = 2;
+                break;
+            default:
+                break;
         }
         int remaining = player.getResourceHand().getTotalCards() - cost;
         return remaining < 5;

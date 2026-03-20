@@ -1,5 +1,9 @@
 import sys
-sys.path.insert(0, r"c:\University\Second Year Programming\2AA4\2aa4-2026-base\assignments\visualize\catanatron")
+
+sys.path.insert(
+    0,
+    r"c:\University\Second Year Programming\2AA4\2aa4-2026-base\assignments\visualize\catanatron",
+)
 from catanatron.models.map import BASE_MAP_TEMPLATE, initialize_tiles, CatanMap, NodeRef
 
 tiles = initialize_tiles(BASE_MAP_TEMPLATE)
@@ -11,10 +15,17 @@ valid_edges = set()
 for tile in cmap.land_tiles.values():
     # adjacent pairs around a pointy-top hex:
     # N-NE, NE-SE, SE-S, S-SW, SW-NW, NW-N
-    order = [NodeRef.NORTH, NodeRef.NORTHEAST, NodeRef.SOUTHEAST, NodeRef.SOUTH, NodeRef.SOUTHWEST, NodeRef.NORTHWEST]
+    order = [
+        NodeRef.NORTH,
+        NodeRef.NORTHEAST,
+        NodeRef.SOUTHEAST,
+        NodeRef.SOUTH,
+        NodeRef.SOUTHWEST,
+        NodeRef.NORTHWEST,
+    ]
     for i in range(6):
         n1 = tile.nodes[order[i]]
-        n2 = tile.nodes[order[(i+1)%6]]
+        n2 = tile.nodes[order[(i + 1) % 6]]
         edge = (min(n1, n2), max(n1, n2))
         valid_edges.add(edge)
 

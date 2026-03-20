@@ -76,8 +76,8 @@ public class Agent implements IAgent {
         }
 
         // Delegate decision making to the strategy
-        Action chosen = strategy.chooseAction(game, player);
-        
+        GameState state = new GameState(game, player);
+        Action chosen = strategy.chooseAction(state);
         if (chosen != null && chosen.getActionType() == ActionType.PASS) {
             hasRolledThisTurn = false;
         }

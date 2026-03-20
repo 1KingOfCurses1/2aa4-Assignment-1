@@ -17,7 +17,7 @@ java_canonical = [
     [45, 47, 46, 19, 21, 43],
     [46, 48, 49, 22, 20, 19],
     [49, 50, 51, 52, 23, 22],
-    [23, 52, 53, 24, 7, 6]
+    [23, 52, 53, 24, 7, 6],
 ]
 
 catanatron_native = [
@@ -39,7 +39,7 @@ catanatron_native = [
     [50, 51, 52, 23, 22, 49],
     [52, 53, 24, 7, 6, 23],
     [24, 25, 26, 27, 8, 7],
-    [8, 27, 28, 29, 10, 9]
+    [8, 27, 28, 29, 10, 9],
 ]
 
 translation = {}
@@ -47,7 +47,9 @@ translation = {}
 for j_tile, c_tile in zip(java_canonical, catanatron_native):
     for j_node, c_node in zip(j_tile, c_tile):
         if j_node in translation:
-            assert translation[j_node] == c_node, f"Mismatch at j_node {j_node}! Was {translation[j_node]}, now {c_node}"
+            assert (
+                translation[j_node] == c_node
+            ), f"Mismatch at j_node {j_node}! Was {translation[j_node]}, now {c_node}"
         translation[j_node] = c_node
 
 arr = []

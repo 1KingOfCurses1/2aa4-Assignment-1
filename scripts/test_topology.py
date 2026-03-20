@@ -12,14 +12,14 @@ import sys
 # Wait, let's look at the mapping logic in Java to confirm Hex positions.
 
 java_canonical = [
-    [5, 0, 1, 2, 3, 4],       # Tile 0: Center
-    [1, 6, 7, 8, 9, 2],       # Tile 1: TR
-    [3, 2, 9, 10, 11, 12],    # Tile 2: TL
-    [15, 4, 3, 12, 13, 14],   # Tile 3: L
-    [18, 16, 5, 4, 15, 17],   # Tile 4: BL
-    [21, 19, 20, 0, 5, 16],   # Tile 5: BR
-    [20, 22, 23, 6, 1, 0],    # Tile 6: R
-    [7, 24, 25, 26, 27, 8],   # Tile 7: Outer TR-ish? Let's trace it.
+    [5, 0, 1, 2, 3, 4],  # Tile 0: Center
+    [1, 6, 7, 8, 9, 2],  # Tile 1: TR
+    [3, 2, 9, 10, 11, 12],  # Tile 2: TL
+    [15, 4, 3, 12, 13, 14],  # Tile 3: L
+    [18, 16, 5, 4, 15, 17],  # Tile 4: BL
+    [21, 19, 20, 0, 5, 16],  # Tile 5: BR
+    [20, 22, 23, 6, 1, 0],  # Tile 6: R
+    [7, 24, 25, 26, 27, 8],  # Tile 7: Outer TR-ish? Let's trace it.
 ]
 
 # We know Java Center is C0=5, C1=0, C2=1, C3=2, C4=3, C5=4
@@ -27,6 +27,7 @@ java_canonical = [
 # Let's map Java Node IDs to physical coordinates!
 # Let Center point be (0,0).
 import math
+
 hex_size = 1.0
 w = math.sqrt(3) * hex_size
 h = 2 * hex_size
@@ -54,7 +55,7 @@ h = 2 * hex_size
 # So Tile 2 (TL?) Wait! If Tile 2 shares SE and S of Center...
 # That means Tile 2 is SOUTHEAST of Center! (Bottom-Right!!!)
 # Let's re-verify:
-# Tile 0 SE is 2, S is 3. 
+# Tile 0 SE is 2, S is 3.
 # Tile 2 NW is 3, N is 2.
 # If Center SE touches Tile 2 N, it's impossible for a hexagon.
 # Wait! In Tile 0, 2 is C3 (SE).

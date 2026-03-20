@@ -8,9 +8,8 @@ public interface DecisionStrategy {
     /**
      * Chooses the best action for the given player.
      * 
-     * @param game   the current game instance
-     * @param player the player making the decision
+     * @param state the read-only game state view
      * @return the chosen Action, or null if no action is possible/chosen
      */
-    Action chooseAction(Game game, Player player);
+    Action chooseAction(GameState state);
 }

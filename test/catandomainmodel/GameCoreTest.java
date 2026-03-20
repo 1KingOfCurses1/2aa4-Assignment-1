@@ -100,11 +100,11 @@ class GameCoreTest {
     void testPlacementLegality() {
         Player p1 = players.get(0);
         Node n0 = board.getNode(0);
-        assertTrue(board.isValidSettlementPlacement(n0, p1));
+        assertTrue(board.isValidSetupSettlementPlacement(n0, p1));
 
         p1.addStructure(new Settlement(p1, n0));
         Node n1 = board.getNode(1);
-        assertFalse(board.isValidSettlementPlacement(n1, players.get(1)), "Distance rule violation");
+        assertFalse(board.isValidSetupSettlementPlacement(n1, players.get(1)), "Distance rule violation");
     }
 
     // 7. City Upgrades
@@ -221,6 +221,31 @@ class GameCoreTest {
     void testActionAndLogging() throws Exception {
         Method apply = Game.class.getDeclaredMethod("applyAction", Action.class, Player.class);
         apply.setAccessible(true);
+        players.get(0).getResourceHand().add(ResourceType.BRICK, 10);
+        players.get(0).getResourceHand().add(ResourceType.LUMBER, 10);
+        players.get(0).getResourceHand().add(ResourceType.WOOL, 10);
+        players.get(0).getResourceHand().add(ResourceType.GRAIN, 10);
+
+        players.get(1).getResourceHand().add(ResourceType.BRICK, 10);
+        players.get(1).getResourceHand().add(ResourceType.LUMBER, 10);
+        players.get(1).getResourceHand().add(ResourceType.WOOL, 10);
+        players.get(1).getResourceHand().add(ResourceType.GRAIN, 10);
+
+        // Pre-place roads so settlements are valid during normal play logic
+        Edge edgeForP0 = board.getAdjacentEdges(board.getNode(0)).get(0);
+        edgeForP0.setRoad(new Road(players.get(0), edgeForP0));
+
+        // Find an edge connecting Node 1 and Node 2 for P1
+        Edge edgeForP1 = null;
+        for (Edge e : board.getAdjacentEdges(board.getNode(2))) {
+            if (e.getNodes().contains(board.getNode(1))) {
+                edgeForP1 = e;
+                break;
+            }
+        }
+        if (edgeForP1 == null)
+            edgeForP1 = board.getAdjacentEdges(board.getNode(2)).get(0);
+        edgeForP1.setRoad(new Road(players.get(1), edgeForP1));
 
         // Human style
         Action build = new Action(1, 1, "BUILD_SETTLEMENT 0", ActionType.BUILD_SETTLEMENT);
@@ -293,9 +318,12 @@ class GameCoreTest {
         setup.setAccessible(true);
         setup.invoke(game);
 
-        // At least one player should have received starting resources from their second settlement.
-        // (They may have gotten 0 if their second settlement lands on desert-only neighbours,
-        //  but on the standard 19-tile board this is virtually impossible for all 4 players.)
+        // At least one player should have received starting resources from their second
+        // settlement.
+        // (They may have gotten 0 if their second settlement lands on desert-only
+        // neighbours,
+        // but on the standard 19-tile board this is virtually impossible for all 4
+        // players.)
         int totalCards = 0;
         for (Player p : players) {
             totalCards += p.getResourceHand().getTotalCards();
@@ -382,7 +410,8 @@ class GameCoreTest {
                 "City with resources + owned settlement should be legal");
     }
 
-    // 24. Setup settlement can be placed on any legal empty node (no road connection needed)
+    // 24. Setup settlement can be placed on any legal empty node (no road
+    // connection needed)
     @Test
     void testSetupSettlementRequiresNoRoad() {
         Player p1 = players.get(0);
@@ -436,12 +465,14 @@ class GameCoreTest {
     }
 
     private boolean dfsFindPath(Board b, Edge current, List<Edge> path, int targetLength) {
-        if (path.size() >= targetLength) return true;
+        if (path.size() >= targetLength)
+            return true;
         for (Node n : current.getNodes()) {
             for (Edge adj : b.getAdjacentEdges(n)) {
                 if (!path.contains(adj)) {
                     path.add(adj);
-                    if (dfsFindPath(b, adj, path, targetLength)) return true;
+                    if (dfsFindPath(b, adj, path, targetLength))
+                        return true;
                     path.remove(path.size() - 1);
                 }
             }
@@ -530,4 +561,3 @@ class GameCoreTest {
         assertEquals(p2InitialVP + 2, p2.getVictoryPoints(), "P2 gained the +2 VP bonus");
     }
 }
-

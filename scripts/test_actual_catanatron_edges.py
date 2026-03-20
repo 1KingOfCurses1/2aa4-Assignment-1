@@ -1,5 +1,9 @@
 import sys
-sys.path.insert(0, r"c:\University\Second Year Programming\2AA4\2aa4-2026-base\assignments\visualize\catanatron")
+
+sys.path.insert(
+    0,
+    r"c:\University\Second Year Programming\2AA4\2aa4-2026-base\assignments\visualize\catanatron",
+)
 from catanatron.models.map import BASE_MAP_TEMPLATE, initialize_tiles, CatanMap
 from catanatron.game import Game
 
@@ -7,7 +11,8 @@ tiles = initialize_tiles(BASE_MAP_TEMPLATE)
 cmap = CatanMap.from_tiles(tiles)
 
 from catanatron.models.player import Player, Color
-game = Game([Player(Color.RED), Player(Color.BLUE)]) # Initialize default game
+
+game = Game([Player(Color.RED), Player(Color.BLUE)])  # Initialize default game
 board = game.state.board
 
 # Actually, CatanMap calculates edges!
