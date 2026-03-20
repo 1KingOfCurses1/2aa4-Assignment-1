@@ -130,6 +130,24 @@ public class RuleBasedDecisionStrategyTest {
     }
 
     /**
+     * Hit the city scoring branch by having exact city cards (5 cards <= 7
+     * constraint).
+     */
+    @Test
+    public void testCityScoredInNormalPhase() {
+        Game game = new Game(board, List.of(player), List.of());
+        player.getResourceHand().add(ResourceType.GRAIN, 2);
+        player.getResourceHand().add(ResourceType.ORE, 3);
+
+        placeSettlement(player, board, 0);
+
+        Action chosen = strategy.chooseAction(new GameState(game, player));
+
+        assertNotNull(chosen);
+        assertEquals(ActionType.BUILD_CITY, chosen.getActionType(), "City should be chosen in scoring phase");
+    }
+
+    /**
      * When the player can afford both settlement and road, settlement (1.0) beats
      * road (0.8).
      */

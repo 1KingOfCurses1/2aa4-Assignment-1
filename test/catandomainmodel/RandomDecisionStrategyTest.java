@@ -42,6 +42,21 @@ class RandomDecisionStrategyTest {
         player.getResourceHand().add(ResourceType.GRAIN, 5);
         player.getResourceHand().add(ResourceType.ORE, 5);
 
+        // Seed board with initial placements so actions are actually valid
+        Board board = game.getBoard();
+        Node n0 = board.getNode(0);
+        Node n1 = board.getAdjacentNodes(n0).get(0);
+        Node n2 = board.getAdjacentNodes(n1).get(0);
+
+        // Settlement at n0 to allow city upgrades
+        n0.setStructure(new Settlement(player, n0));
+
+        // Connect road n0-n1 to allow settlement at n1 and road extensions
+        Edge e01 = board.getEdges().stream().filter(e -> e.getNodes().contains(n0) && e.getNodes().contains(n1))
+                .findFirst().orElse(null);
+        if (e01 != null)
+            e01.setRoad(new Road(player, e01));
+
         GameState state = new GameState(game, player);
 
         for (int i = 0; i < 10; i++) {
