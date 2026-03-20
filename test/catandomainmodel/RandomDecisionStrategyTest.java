@@ -46,7 +46,6 @@ class RandomDecisionStrategyTest {
         Board board = game.getBoard();
         Node n0 = board.getNode(0);
         Node n1 = board.getAdjacentNodes(n0).get(0);
-        Node n2 = board.getAdjacentNodes(n1).get(0);
 
         // Settlement at n0 to allow city upgrades
         n0.setStructure(new Settlement(player, n0));

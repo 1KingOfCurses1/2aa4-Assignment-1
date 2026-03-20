@@ -19,7 +19,7 @@ class AgentTest {
         List<Node> nodes = Demonstrator.createNodes();
         Demonstrator.mapNodesToTiles(tiles, nodes);
         List<Edge> edges = Demonstrator.createEdges(nodes);
-        Board board = new Board(tiles, nodes, edges);
+        new Board(tiles, nodes, edges);
     }
 
     @Test

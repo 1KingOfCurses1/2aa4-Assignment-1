@@ -18,11 +18,11 @@ class CommandManagerTest {
         GameCommand dummy = new GameCommand() {
             @Override
             public void execute() {
-            }
+                /* No action needed for test mock */ }
 
             @Override
             public void undo() {
-            }
+                /* No action needed for test mock */ }
 
             @Override
             public String describe() {

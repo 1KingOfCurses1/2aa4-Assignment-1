@@ -36,13 +36,11 @@ public class RandomDecisionStrategy implements DecisionStrategy {
 
         // Check for legal roads
         for (Edge e : board.getEdges()) {
-            if (board.isValidRoadPlacement(e, player)) {
-                if (e.getNodes().size() == 2) {
-                    int n1 = e.getNodes().get(0).getId();
-                    int n2 = e.getNodes().get(1).getId();
-                    availableActions.add(
-                            new Action(round, player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD));
-                }
+            if (board.isValidRoadPlacement(e, player) && e.getNodes().size() == 2) {
+                int n1 = e.getNodes().get(0).getId();
+                int n2 = e.getNodes().get(1).getId();
+                availableActions.add(
+                        new Action(round, player.getId(), "BUILD_ROAD " + n1 + " " + n2, ActionType.BUILD_ROAD));
             }
         }
 

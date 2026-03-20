@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class BoardTest {
     private Board board;
     private Player player;
@@ -24,7 +22,7 @@ class BoardTest {
 
     @Test
     void testBasicLookups() {
-        board.getTile(0);
+        org.junit.jupiter.api.Assertions.assertNotNull(board.getTile(0));
         board.getTile(-1);
         board.getNode(0);
         board.getNode(-1);
@@ -35,6 +33,7 @@ class BoardTest {
     @Test
     void testAdjacencyAndPlacement() {
         Node n0 = board.getNode(0);
+        org.junit.jupiter.api.Assertions.assertNotNull(n0);
         Node n1 = board.getNode(1);
         Edge e0 = board.getEdge(0);
 

@@ -4,7 +4,6 @@
 
 package catandomainmodel;
 
-import catanutils.GameStateExporter;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
@@ -56,8 +55,8 @@ public class Demonstrator {
         game.getGameStateExporter().writeBaseMap(board);
         game.getGameStateExporter().writeState(game);
 
-        // Seed initial state for AI verification (Task 2)
-        setupVerificationScenario(game);
+        // Seed initial state // R3.1 setup scenario
+        setupVerificationScenario();
 
         // Run the simulation
         game.startGame();
@@ -74,7 +73,7 @@ public class Demonstrator {
         LOGGER.info("Done.");
     }
 
-    private static void setupVerificationScenario(Game game) {
+    private static void setupVerificationScenario() {
         LOGGER.info(">>> Regular Setup sequence initializing (no pre-seeded Verification Scenario) <<<");
         // We will no longer seed any early structures or resources here,
         // so that the 8-step Setup Phase correctly builds from zero.
