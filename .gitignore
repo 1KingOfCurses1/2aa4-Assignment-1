@@ -27,7 +27,6 @@ tmp/
 
 # --- Artifacts & Simulation Results ---
 *.pdf
-*.png
 *.log
 
 # --- Game Simulation State ---
